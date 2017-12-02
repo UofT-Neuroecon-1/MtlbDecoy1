@@ -60,7 +60,6 @@ run('Multiattribute_Binary_Task.m');
 %Ternary Task
 n_t= 20;
 run('Multiattribute_Ternary_Task.m');
-sca;
 
 %Double Decoy Task
 run('Multiattribute_DoubleDecoy_Task.m');

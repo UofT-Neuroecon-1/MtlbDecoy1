@@ -1,0 +1,46 @@
+Object: Credit Cards
+----------
+Characteristics:
+Annual fee: $5-$25 by increment of 1
+Transaction fee: $0, $0.25, $0.5, $0.75, $1
+Interest charged: 5%-25%, by increment of 1
+Reward %: 0-2.5%, by increment of 0.25%
+Other ATM surcharge: $0-$2.5 by increment of 0.25
+Exchange commission: 0%-2.5% increment of 0.25%
+Warranty on purchased goods: 0 days, 15 days, 30 days, 60 days, 90 days
+
+----------
+Experiment:
+During one phase questions of different types are in randomized order.
+For instance, during phase 1, you can have questions of types: A,B,B,A,B,A,...
+
+Phase 1 - Type A:
+2 Options - 20 Questions - D optimal design (model free)
+
+Phase 1 - Type B:
+2 Options - 20 Questions - BOSIE with Indiference goal 
+
+Subtotal:40
+--
+Phase 2 - Type A:
+3 Options - 10 Questions - D optimal design (model free)
+
+Phase 2 - Type B:
+3 Options - 10 Questions - BOSIE with Model Selection goal (Logit vs PDN)
+
+Phase 2 - Type C:
+3 Options - 20 Questions - Indiference + Decoy  
+
+Subtotal:40
+--
+Phase 3 - Type A:
+4 Options - 20 Questions - D optimal design (model free)
+
+Phase 3 - Type B:
+4 Options - 20 Questions - BOSIE with Model Selection goal (Logit vs PDN)
+
+Subtotal: 40
+--
+Total: 120 questions
+
+ 

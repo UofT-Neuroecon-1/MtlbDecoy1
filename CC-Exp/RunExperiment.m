@@ -18,15 +18,16 @@ attrVals{5}= (0:0.25:2.5);    attrNames{5}="ATM surcharge ($)";
 attrVals{6}= (0:0.25:2.5);    attrNames{6}="Currency conversion fee (%)";
 attrVals{7}= [0,15,30,60,90,120];    attrNames{7}="Warranty on purchase (days)";
 attrSign = [-1, -1, -1, 1, -1, -1, 1];
-num_option_list = [2*ones(10,1);3*ones(20,1);4*ones(10,1)];
+num_option_list = [2*ones(1,1);3*ones(2,1);4*ones(1,1)];
 opt_num_quest = numel(num_option_list);
 
 %% Particles Initialization
 param = struct;
 param.G = 4;
-param.P = 64;
+param.P = 128;
 param.K = size(attrVals,1);
-param.Msteps = 1;
+param.Msteps = 2;
+param.NormDraw = mvnrnd(zeros(4,1),eye(4),1000);
 Models = {'Logit';'PDN'};
 Particles = cell(numel(Models),1);
 initTheta = cell(param.G,param.P);
@@ -55,11 +56,11 @@ end
 %Prompt to enter subject's details, which will later be used in the save
 %file.
 
-prompt = {'Subject''s number:', 'age', 'gender'};
-defaults = {'0', '0', 'F'};
+prompt = {'age', 'gender'};
+defaults = {'0', 'F'};
 answer = inputdlg(prompt, 'ChoiceRT', 2, defaults);
-[subid, subage, gender] = deal(answer{:}); % all inputs are strings
-
+[subage, gender] = deal(answer{:}); % all inputs are strings
+subid = num2str(floor(rand*1000));
 %create data folder if doesnt exist
 if ~exist('data', 'dir')
   mkdir('data');
@@ -83,7 +84,7 @@ timer = tic;
 
 run('Multiattribute_Ternary_Task.m');
 
-
+toc(timer)
 
 %% Stop Parallel Pool
 delete(poolobj);

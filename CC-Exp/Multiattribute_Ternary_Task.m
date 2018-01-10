@@ -26,6 +26,10 @@ Screen('Flip',mainwin);
 
 
 %%
+timerVal = tic;
+timeRecords = struct;
+timeRecords.show = zeros(opt_num_quest,1);
+timeRecords.answer = zeros(opt_num_quest,1);
 
 %%
 for obs=1:opt_num_quest ;
@@ -67,9 +71,8 @@ for obs=1:opt_num_quest ;
     end
     
     Screen('Flip',mainwin);
-    
+    timeRecords.show(obs) = toc(timerVal);
     respToBeMade = true;
-    tic
     
     
     while respToBeMade
@@ -100,6 +103,7 @@ for obs=1:opt_num_quest ;
         
         
     end
+    timeRecords.answer(obs) = toc(timerVal);
     ChoiceList = [ChoiceList; choice];
     
     Screen('TextSize', mainwin, 25);
@@ -121,4 +125,4 @@ KbStrokeWait;
 sca;
 
 
-save(['data' filesep 'Optim-' num2str(subid) '-' datestr(datetime('now'),'yyyy-mm-dd-HH.MM.SS') '.mat'],'Xs','ChoiceList','Particles','BF');
+save(['data' filesep 'Optim-' num2str(subid) '-' datestr(datetime('now'),'yyyy-mm-dd-HH.MM.SS') '.mat'],'Xs','ChoiceList','Particles','BF','timeRecords','subid', 'subage', 'gender');

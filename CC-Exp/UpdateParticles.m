@@ -20,7 +20,7 @@ for m=1:M
     choice = ChoiceList(end);
     for g = 1:param.G
         parfor p = 1:param.P
-            proba_choice = ProbaChoice( X , model , OptimTheta{g,p}, attrSign );
+            proba_choice = ProbaChoice( X , model , OptimTheta{g,p}, attrSign, param );
             weights(g,p) = proba_choice(choice);
         end
     end
@@ -56,22 +56,24 @@ for m=1:M
     end
     
     %% M phase
-    accept = zeros(param.G,param.P,3);
-    for st=1:param.Msteps
-        vecTheta = vectorizeTheta( OptimTheta );
-        std_theta = squeeze(std(vecTheta,[],2)); 
-        for g = 1:param.G
-            for n = 1:param.P
-                [OptimTheta{g,n},accept(g,n,:)] = Mutate(Xs,ChoiceList, model, OptimTheta{g,n},std_theta(g,:),attrSign);
-            end
+    accept = zeros(param.G,param.P);
+    vecTheta = vectorizeTheta( OptimTheta );
+    cov_theta = zeros(size(vecTheta,3),size(vecTheta,3));
+    for g = 1:param.G
+        cov_theta = cov(squeeze(vecTheta(g,:,:)))./2;
+        %set min step variance
+        cov_theta(eye(size(vecTheta,3))==1) = max(diag(cov_theta),0.0001);
+        parfor n = 1:param.P
+            [OptimTheta{g,n},accept(g,n)] = Mutate(Xs,ChoiceList, model, OptimTheta{g,n},cov_theta,attrSign,param);
         end
-        mean(squeeze(sum(accept,2)) ./ param.P)
     end
+    mean(squeeze(sum(accept,2)) ./ param.P)
     vecTheta = vectorizeTheta( OptimTheta );
     vectGroupedTheta = reshape(permute(vecTheta,[2 1 3]),[],4);
     postmeans = squeeze(mean(vecTheta,2))
     % save results
     Particles{m}.OptimTheta = OptimTheta;
+    Particles{m}.postmeans = postmeans;
 end
 
 end

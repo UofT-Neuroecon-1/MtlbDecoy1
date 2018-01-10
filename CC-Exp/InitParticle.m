@@ -5,11 +5,11 @@ function [ theta ] = InitParticle( model , K )
     if  strcmp(model,'Logit')
         theta = [betarnd(3,1) gamrnd(2,2,1,K)];
     elseif strcmp(model,'PDN')
-        theta = [betarnd(4,1) gamrnd(1,0.5,1,1) gamrnd(2,2,1,K)];
+        theta = [betarnd(3,1) gamrnd(1,0.5,1,1) gamrnd(2,2,1,K)];
     elseif strcmp(model,'PDNUnitIndep')
         theta = [betarnd(3,1) gamrnd(1,0.5,1,K) gamrnd(2,2,1,K)];
     elseif strcmp(model,'RemiProbit')
-        theta = [gamrnd(1,0.5,1,K) gamrnd(2,2,1,K)];
+        theta = [gamrnd(1,0.5,1,K) gamrnd(2,3,1,K) betarnd(3,1)];
     elseif strcmp(model,'RemiProbitNorm')
         theta = [gamrnd(1,0.5,1,K) gamrnd(2,2,1,K) gamrnd(1,1) gamrnd(1,0.5,1,1)];
     elseif strcmp(model,'MLBA')

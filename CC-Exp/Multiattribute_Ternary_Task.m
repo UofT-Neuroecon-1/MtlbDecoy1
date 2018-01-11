@@ -117,12 +117,20 @@ for obs=1:opt_num_quest ;
     
 end
 
-    Screen('TextSize', mainwin, 18);
-    Screen('DrawText',mainwin,'Thank you!',center(1),center(2),textcolor)
-    Screen('Flip',mainwin);
+%Save Data
+filenamesave = ['data' filesep 'Optim-' num2str(subid) '-' datestr(datetime('now'),'yyyy-mm-dd-HH.MM.SS') '.mat'];
+save(filenamesave,'Xs','ChoiceList','Particles','BF','timeRecords','subid', 'subage', 'gender');
+%Send file through FTP
+ts = ftp('ftp.remidaviet.com','MatlabData@davserv.net','t6ubJ3Mn1qQm7gC9AAJb');
+mput(ts,filenamesave);
+close(ts);
+
+
+%Thank you screen
+Screen('TextSize', mainwin, 18);
+DrawFormattedText(mainwin,'Thank you !\nThe experiment is now over, you can go to the experimenter and collect your participation fees.', 'center', 'center', 0, [], [], [], [1.5], [],centerRect);
+Screen('Flip',mainwin);
     
 KbStrokeWait;
 sca;
 
-
-save(['data' filesep 'Optim-' num2str(subid) '-' datestr(datetime('now'),'yyyy-mm-dd-HH.MM.SS') '.mat'],'Xs','ChoiceList','Particles','BF','timeRecords','subid', 'subage', 'gender');

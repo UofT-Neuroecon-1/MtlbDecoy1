@@ -23,6 +23,10 @@ Screen('TextSize', mainwin, 30);
 [nx, ny, bbox] = DrawFormattedText(mainwin,'Loading', 'center', 'center', 0, [], [], [], [1.5], [],centerRect);
 Screen('Flip',mainwin);
 
+% Savefile variables
+computername = getenv('computername');
+filenamesave = ['data' filesep 'Optim-' computername '-' datestr(datetime('now'),'yyyy-mm-dd-HH.MM.SS') '-' num2str(subid)  '.mat'];
+
 
 
 %%
@@ -112,14 +116,13 @@ for obs=1:opt_num_quest ;
     %
     [ Particles ] = UpdateParticles( Particles, Xs(1:obs), ChoiceList(1:obs));
     BF = exp(Particles{2}.log_marg_like - Particles{1}.log_marg_like)
-    
+    %Save Data
+    save(filenamesave,'Xs','ChoiceList','Particles','BF','timeRecords','subid', 'subage', 'gender');
     
     
 end
 
-%Save Data
-filenamesave = ['data' filesep 'Optim-' num2str(subid) '-' datestr(datetime('now'),'yyyy-mm-dd-HH.MM.SS') '.mat'];
-save(filenamesave,'Xs','ChoiceList','Particles','BF','timeRecords','subid', 'subage', 'gender');
+
 %Send file through FTP
 ts = ftp('ftp.remidaviet.com','MatlabData@davserv.net','t6ubJ3Mn1qQm7gC9AAJb');
 mput(ts,filenamesave);

@@ -28,6 +28,8 @@ computername = getenv('computername');
 filenamesave = ['data' filesep 'Optim-' computername '-' datestr(datetime('now'),'yyyy-mm-dd-HH.MM.SS') '-' num2str(subid)  '.mat'];
 
 
+%% Comprehension check
+run('Multiattribute_comprehension_check.m');
 
 %%
 timerVal = tic;
@@ -36,11 +38,22 @@ timeRecords.show = zeros(opt_num_quest,1);
 timeRecords.answer = zeros(opt_num_quest,1);
 
 %%
-for obs=1:opt_num_quest ;
+for obs=1:opt_num_quest+num_consistency_check ;
     
-    X_optim = OptimDesign( Particles, num_option_list(obs), attrVals, attrSign, 'ADO' );
-    Xs{obs,1} = reshape( X_optim,[param.K size(X_optim,2)/param.K] )';
-    J = size(Xs{obs,1},1);
+    
+    if obs <= opt_num_quest
+        %% Optimal Questions
+        X_optim = OptimDesign( Particles, num_option_list(obs), attrVals, attrSign, 'ADO' );
+        Xs{obs,1} = reshape( X_optim,[param.K size(X_optim,2)/param.K] )';
+        J = size(Xs{obs,1},1);
+    else
+        %% Consistency check
+        redo_obs = list_const_check(obs-opt_num_quest);
+        J = size(Xs{redo_obs,1},1);
+        option_permuted = randperm(J);
+        expected_choice = sum((1:J) .* (ChoiceList(redo_obs)==option_permuted));
+        Xs{obs,1} =  Xs{redo_obs,1}(option_permuted,:);
+    end
     K = size(Xs{obs,1},2);
     
     % create text
@@ -84,24 +97,30 @@ for obs=1:opt_num_quest ;
         [keyIsDown,secs, keyCode] = KbCheck;
         
         
-        if  keyCode(LeftKey)
+        if  keyCode(LeftKey) || keyCode(LeftNKey)
             choice = 1;
             respToBeMade = false;
-        elseif keyCode(UpKey)
+        elseif keyCode(UpKey) || keyCode(UpNKey)
             if J > 2
                 choice = 3;
                 respToBeMade = false;
             end
-        elseif keyCode(DownKey)
+        elseif keyCode(DownKey) || keyCode(DownNKey)
             if J > 3
                 choice = 4;
                 respToBeMade = false;
             end
-        elseif keyCode(RightKey)
+        elseif keyCode(RightKey) || keyCode(RightNKey)
             choice = 2;
             respToBeMade = false;
         elseif keyCode(escKey)
             sca;
+            %Send file through FTP
+            if ~debug_mode
+                ts = ftp('ftp.remidaviet.com','MatlabData@davserv.net','t6ubJ3Mn1qQm7gC9AAJb');
+                mput(ts,filenamesave);
+                close(ts);
+            end
             error('leaving experiment before completion.')
         end
         
@@ -109,6 +128,10 @@ for obs=1:opt_num_quest ;
     end
     timeRecords.answer(obs) = toc(timerVal);
     ChoiceList = [ChoiceList; choice];
+    % Consistency check
+    if obs > opt_num_quest
+        ConsistencyCheck(obs-opt_num_quest) = expected_choice == choice;
+    end
     
     Screen('TextSize', mainwin, 25);
     [nx, ny, bbox] = DrawFormattedText(mainwin,'Loading', 'center', 'center', 0, [], [], [], [1.5], [],centerRect);
@@ -117,23 +140,26 @@ for obs=1:opt_num_quest ;
     [ Particles ] = UpdateParticles( Particles, Xs(1:obs), ChoiceList(1:obs));
     BF = exp(Particles{2}.log_marg_like - Particles{1}.log_marg_like)
     %Save Data
-    save(filenamesave,'Xs','ChoiceList','Particles','BF','timeRecords','subid', 'subage', 'gender');
+    save(filenamesave,'Xs','ChoiceList','Particles','BF','timeRecords','subid', 'subage', 'gender','ConsistencyCheck','list_const_check');
     
     
 end
 
 
-%Send file through FTP
-ts = ftp('ftp.remidaviet.com','MatlabData@davserv.net','t6ubJ3Mn1qQm7gC9AAJb');
-mput(ts,filenamesave);
-close(ts);
 
 
 %Thank you screen
 Screen('TextSize', mainwin, 18);
-DrawFormattedText(mainwin,'Thank you !\nThe experiment is now over, you can go to the experimenter and collect your participation fees.', 'center', 'center', 0, [], [], [], [1.5], [],centerRect);
+DrawFormattedText(mainwin,'Thank you !\nThe experiment is now over, you can go to the experimenter for the debriefing.', 'center', 'center', 0, [], [], [], [1.5], [],centerRect);
 Screen('Flip',mainwin);
     
 KbStrokeWait;
 sca;
+
+%Send file through FTP
+if ~debug_mode
+    ts = ftp('ftp.remidaviet.com','MatlabData@davserv.net','t6ubJ3Mn1qQm7gC9AAJb');
+    mput(ts,filenamesave);
+    close(ts);
+end
 

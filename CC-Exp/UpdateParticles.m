@@ -58,13 +58,18 @@ for m=1:M
     %% M phase
     accept = zeros(param.G,param.P);
     vecTheta = vectorizeTheta( OptimTheta );
-    cov_theta = zeros(size(vecTheta,3),size(vecTheta,3));
     for g = 1:param.G
         cov_theta = cov(squeeze(vecTheta(g,:,:)))./2;
         %set min step variance
         cov_theta(eye(size(vecTheta,3))==1) = max(diag(cov_theta),0.0001);
+        %check positive def
+        [chol_cov_theta,p] = chol(cov_theta);
+        while p
+            cov_theta = cov_theta + 0.00001 * eye(size(cov_theta,1));
+            [chol_cov_theta,p] = chol(cov_theta);
+        end
         parfor n = 1:param.P
-            [OptimTheta{g,n},accept(g,n)] = Mutate(Xs,ChoiceList, model, OptimTheta{g,n},cov_theta,attrSign,param);
+            [OptimTheta{g,n},accept(g,n)] = Mutate(Xs,ChoiceList, model, OptimTheta{g,n},chol_cov_theta,attrSign,param);
         end
     end
     mean(squeeze(sum(accept,2)) ./ param.P)

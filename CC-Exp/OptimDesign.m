@@ -7,7 +7,7 @@ function [ X ] = OptimDesign( Particles, num_opt, attrVals, attrSign, type )
 % type: of optimal desighn: 'model_select' (ADO), 'Shannon' ...
 
 % Get particles info
-M = size(Particles,1);
+M = 2;size(Particles,1);
 K = size(attrVals,1);
 
 %% Objective functions

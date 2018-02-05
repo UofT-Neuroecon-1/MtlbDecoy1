@@ -30,15 +30,7 @@ K = size(X,2);
 % end
 %%
 
-if  strcmp(model,'logit')
-    %True params
-    Beta = Theta;
-    %utility computation
-    u = X*Beta;
-    u = u - max(u); %avoid overflow
-    sum_exp_u = sum(exp(u));
-    proba_choice = exp(u)./sum_exp_u;
-elseif strcmp(model,'PDN')
+if  strcmp(model,'PDN')
     %True params
     alpha = Theta(1);
     sigma = Theta(2);
@@ -46,16 +38,105 @@ elseif strcmp(model,'PDN')
     %utility computation
     u_x = X.^alpha;
     v = zeros(J,1);
+    unnorm_u =  Beta .* u_x';
     for j=1:J
         u_y = u_x;
         u_y(j,:)=[];
-        unnorm_u =  Beta .* u_x(j,:)';
-        norm_coefs = sum(1 ./ (1 + sigma * u_x(j,:) + sigma * u_y),1);%./(J-1);
-        v(j) = norm_coefs * unnorm_u; 
+        norm_coefs = sum(1 ./ (sigma + u_x(j,:) + u_y),1);%./(J-1);
+        v(j) = norm_coefs * unnorm_u(:,j); 
     end
     v = v - max(v); %avoid overflow
     sum_exp_v = sum(exp(v));
     proba_choice = exp(v)./sum_exp_v;
+elseif strcmp(model,'PDNNew')
+    %True params
+    alpha = Theta(1);
+    sigma = Theta(2);
+    Beta = (attrSign)';
+    Omega = Theta(3:3+K-1);
+    %utility computation
+    u_x = X.^alpha;
+    v = zeros(J,1);
+    unnorm_u = (attrSign .* u_x)';
+    for j=1:J
+        u_y = u_x;
+        u_y(j,:)=[];
+        norm_coefs = sum(1 ./ (sigma + Omega .* (u_x(j,:) + u_y)),1);%./(J-1);
+        v(j) = norm_coefs * unnorm_u(:,j); 
+    end
+    v = v - max(v); %avoid overflow
+    sum_exp_v = sum(exp(v));
+    proba_choice = exp(v)./sum_exp_v;
+elseif strcmp(model,'RemiStandardized')
+    %True params
+    alpha = Theta(1);
+    sigma = Theta(2);
+    Beta = (attrSign .* Theta(3:3+K-1))';
+    %utility computation
+    x_mean = mean(X,1);
+    sd_x = std(X,[],1) * alpha + sigma;
+    x_standardized = (X - x_mean) ./ sd_x;
+    attr_signal = 1 ./ (1+exp(-x_standardized));
+    v = attr_signal * Beta;
+    v = v - max(v); %avoid overflow
+    sum_exp_v = sum(exp(v));
+    proba_choice = exp(v)./sum_exp_v;
+elseif strcmp(model,'RemiStandardized2')
+    %True params
+    alpha = Theta(1);
+    sigma = Theta(2);
+    Beta = (attrSign .* Theta(3:3+K-1))';
+    %utility computation
+    x_mean = mean(X,1);
+    sd_x = std(X,[],1) + sigma;
+    x_standardized = (X - x_mean) ./ sd_x;
+    attr_signal = 1 ./ (1+exp(-x_standardized));
+    v = attr_signal * Beta;
+    v = v - max(v); %avoid overflow
+    sum_exp_v = sum(exp(v));
+    proba_choice = exp(v)./sum_exp_v;
+elseif strcmp(model,'RemiStandardizedL')
+    %True params
+    alpha = Theta(1);
+    Beta = (attrSign .* Theta(2:1+K))';
+    Mu0 = Theta(2+K:1+2*K);
+    Sigma0 = Theta(2+2*K:1+3*K);
+    %utility computation
+    x_mean = alpha * mean(X,1) + (1-alpha) * Mu0;
+    sd_x = alpha * std(X,[],1) + (1-alpha) * Sigma0;
+    x_standardized = (X - x_mean) ./ sd_x;
+    attr_signal = 1 ./ (1+exp(-x_standardized));
+    v = attr_signal * Beta;
+    v = v - max(v); %avoid overflow
+    sum_exp_v = sum(exp(v));
+    proba_choice = exp(v)./sum_exp_v;
+elseif strcmp(model,'RemiProbitStandardized')
+    %True params
+    sigma = Theta(1:K);
+    Beta = (attrSign .*Theta(K+1:2*K))';
+    alpha = Theta(end-1);
+    gamma = Theta(end);
+    % standardize
+    x_mean = mean(X,1);
+    sd_x = std(X,[],1) + sigma;
+    x_standardized = (X - x_mean) ./ sd_x;
+    % encode
+    attr_signal = 1 ./ (1+exp(-x_standardized));
+    %utility computation
+    v = attr_signal * Beta;
+    Cov_elements = zeros(J,J,K);
+    for k=1:K
+        Cov_elements(:,:,k)= attr_signal(:,k) * attr_signal(:,k)';
+    end
+    VarCov = sum(Cov_elements,3) + 0.1 * eye(J,J);
+    %Cholesky decomp + check positive def
+    [CholeskyUpper,psd] = chol(VarCov);
+    while psd
+        VarCov = VarCov + 0.00001 * eye(size(VarCov,1));
+        [CholeskyUpper,psd] = chol(VarCov);
+    end
+    sim = repmat(v',[size(param.NormDraw,1) 1]) + param.NormDraw(:,1:J) * CholeskyUpper;
+    proba_choice = mean(sim == max(sim,[],2));
 elseif strcmp(model,'RemiProbit')
     %True params
     sigma = Theta(1:K);
@@ -68,8 +149,13 @@ elseif strcmp(model,'RemiProbit')
     for k=1:K
         Cov_elements(:,:,k)= sigma(k)^2 * X_norm(:,k) * X_norm(:,k)';
     end
-    VarCov = sum(Cov_elements,3) + eye(J,J);
-    CholeskyUpper = chol(VarCov);
+    VarCov = sum(Cov_elements,3) + 0.1 * eye(J,J);
+    %Cholesky decomp + check positive def
+    [CholeskyUpper,psd] = chol(VarCov);
+    while psd
+        VarCov = VarCov + 0.00001 * eye(size(VarCov,1));
+        [CholeskyUpper,psd] = chol(VarCov);
+    end
     sim = repmat(u_x',[size(param.NormDraw,1) 1]) + param.NormDraw(:,1:J) * CholeskyUpper;
     proba_choice = mean(sim == max(sim,[],2));
 elseif strcmp(model,'RemiProbitNorm')
@@ -86,7 +172,7 @@ elseif strcmp(model,'RemiProbitNorm')
         u_y = u_x;
         u_y(j,:)=[];
         unnorm_u =  Beta .* u_x(j,:)';
-        norm_coefs(j,:) = sum(1 ./ (1 + gamma * u_x(j,:) + gamma * u_y),1);
+        norm_coefs(j,:) = sum(1 ./ (gamma +  u_x(j,:) + u_y),1);
         v(j) = norm_coefs(j,:) * unnorm_u; 
     end
     X_norm = u_x.*norm_coefs;
@@ -95,7 +181,12 @@ elseif strcmp(model,'RemiProbitNorm')
         Cov_elements(:,:,k)= sigma(k)^2 * X_norm(:,k) * X_norm(:,k)';
     end
     VarCov = sum(Cov_elements,3) + 0.1 * eye(J,J);
-    CholeskyUpper = chol(VarCov);
+    %Cholesky decomp + check positive def
+    [CholeskyUpper,psd] = chol(VarCov);
+    while psd
+        VarCov = VarCov + 0.00001 * eye(size(VarCov,1));
+        [CholeskyUpper,psd] = chol(VarCov);
+    end
     sim = repmat(v',[size(param.NormDraw,1) 1]) + param.NormDraw(:,1:J) * CholeskyUpper;
 %     sim = mvnrnd(v,VarCov,1000);
     proba_choice = mean(sim == max(sim,[],2));
@@ -175,6 +266,8 @@ elseif strcmp(model,'Logit')
 else
     proba_choice = zeros(J,1);
 end
+%mixture 99.9% model and 0.1% unif
+proba_choice = 0.99 .* proba_choice + 0.01/J;
 
 end
 

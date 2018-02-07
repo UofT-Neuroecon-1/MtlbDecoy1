@@ -13,12 +13,13 @@ ModelsEstim = cell(M,1);
 Particles = cell(M,1);
 for m=1:M
     Particles{m}.particle = cell(param.G,param.P);
+    Particles{m}.weights = ones(param.G,param.P);
     for g=1:param.G
         for p=1:param.P
             Particles{m}.particle{g,p} = InitParticle(m,param);
             % Initialize output values
-            Particles{m}.log_marg_like = zeros(param.num_subj,1);
-            Particles{m}.log_marg_like_total = 0;
+            Particles{m}.log_marg_like = zeros(param.num_subj,param.G);
+            Particles{m}.log_marg_like_total = zeros(param.G,1);
             Particles{m}.group_postmeans = cell(param.G,1);
             Particles{m}.postmeans = [];
             Particles{m}.group_postsd = cell(param.G,1);
@@ -57,9 +58,9 @@ end
 
 %% Descriptive stats - Post Estimation
 % save marginal likelihoods
-log_marg_like = zeros(1,M);
+log_marg_like = zeros(param.G,M);
 for m=1:M
-    log_marg_like(m) = Particles{m}.log_marg_like_total;
+    log_marg_like(:,m) = Particles{m}.log_marg_like_total;
     %% Compute posterior means
     size_NK = size(Particles{m}.particle{1}.theta);
     Particles{m}.postmeans = nan(param.G,size_NK(1),size_NK(2));
@@ -81,6 +82,7 @@ EstimationOutput = struct;
 % Save Data
 EstimationOutput.Particles = Particles;
 EstimationOutput.log_marg_like = log_marg_like;
+save(param.savefile,'EstimationOutput');
 
 end
 

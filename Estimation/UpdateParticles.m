@@ -16,21 +16,24 @@ for m=1:M
     end
     %% C Phase
     % Reweight each particle to take into account new observation
-    weights = ones(param.G,param.P);
+    weights = Particles{m}.weights;
     ChoiceSet = SubjData{subj}.Xs{obs};
     choice = SubjData{subj}.ChoiceList(obs);
     for g = 1:param.G
         parfor p = 1:param.P
             proba_choice = ProbaChoice( ChoiceSet, subj, model , Particles{m}.particle{g,p}, param );
-            weights(g,p) = proba_choice(choice);
+            weights(g,p) = weights(g,p) * proba_choice(choice);
         end
     end
+    % Compute relative ESS
+    ress = sum(sum(weights))^2 / (param.G*param.P*sum(sum(weights.^2)));
     
     % Save marginal likelihood for current observation
-    log_w_bar = log(sum(sum(weights))/(param.G*param.P));
-    Particles{m}.log_marg_like(subj) = Particles{m}.log_marg_like(subj) + log_w_bar;
+    log_w_bar = log( sum(weights,2) ./ sum(Particles{m}.weights,2) );%(param.G*param.P));
+    Particles{m}.log_marg_like(subj,:) = Particles{m}.log_marg_like(subj,:) + log_w_bar';
     Particles{m}.log_marg_like_total = Particles{m}.log_marg_like_total + log_w_bar;
-    fprintf('End C: Model %d ; %d - %d log(P(y|M)) = %.5f\n',m,subj,obs,Particles{m}.log_marg_like(subj));
+    Particles{m}.weights = weights;
+    fprintf('End C: Model %d ; RESS = %.5f ; %d - %d subject avg logML = %.5f\n',m,ress,subj,obs,mean(Particles{m}.log_marg_like(subj,:)) );
     
     %% S Phase : Importance Resampling, within particle groups
     for g=1:param.G
@@ -48,6 +51,7 @@ for m=1:M
             end
         end
     end
+    Particles{m}.weights = ones(param.G,param.P);
     clear temp_Particles;
     
     %% M phase

@@ -4,17 +4,21 @@
 clear
 
 %% Load Backup
-% if you want to load a backup from a previous estimation (set to [] if
-% not)
-backup_file = 'backup1.mat';
+% if you want to load a backup from a previous estimation
+% (set to [] or a non existing file name if not)
+backup_file = 'backup1-StndVsHierPDN.mat';
+
 %% Estimation Parameters
 % You can create your own parameters that will be passed to the likelihood
 % function and the particles initialization functions
 param = struct;
 param.G = 2; % Number of particles group
-param.P = 128; % Number of particles per group
-param.Msteps = 4; % Number of mutate steps
+param.P = 256; % Number of particles per group
+param.Msteps = 5; % Number of mutate steps
 param.Tag = 'StndVsHierPDN'; % This tag will be added to the output file
+
+% Output file
+% Remember to create the folder before starting
 param.savefile = ['Analysis' filesep param.Tag sprintf('-%.0fx%.0f-M%.0f-',param.G,param.P,param.Msteps) datestr(datetime('now'),'yyyy-mm-dd-HH.MM') '.mat'];
 
 % Models to use for estimations
@@ -53,6 +57,7 @@ clear k
 % Load files list
 fileslist = dir(['..\CC-Exp\Analysis\LabData' filesep 'Optim-BRLAB*.mat']);
 num_subj = size(fileslist,1);
+num_subj = 2;
 Data = cell(num_subj,1);
 subjList = [];
 for file = 1:num_subj

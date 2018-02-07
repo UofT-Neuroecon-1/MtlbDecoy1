@@ -6,9 +6,6 @@ addpath('ProbabilityDistributions')
 param.num_subj = numel(SubjData); 
 M = numel(param.Models);
 
-% Initialize model objects
-ModelsEstim = cell(M,1);
-
 %% Initialize particles
 Particles = cell(M,1);
 for m=1:M

@@ -21,7 +21,7 @@ param = struct;
 param.G = 2;
 param.P = 128;
 param.K = size(attrVals,1);
-param.Msteps = 3;
+param.Msteps = 5;
 param.NormDraw = mvnrnd(zeros(4,1),eye(4),1000);
 param.attrVals = attrVals;
 param.attrSign = attrSign;
@@ -115,6 +115,18 @@ prop_cond_ddec = mean(double_prop_subj(list_has_sdec,:));
 DecoyModelFree.singleProp_cond = prop_cond_sdec(1:2) / sum(prop_cond_sdec(1:2))
 DecoyModelFree.doubleProp_cond = prop_cond_ddec(1:2) / sum(prop_cond_ddec(1:2))
 
+%%
+histogram(single_prop_subj(:,1)./sum(single_prop_subj(:,1:2),2))
+hold on
+histogram(double_prop_subj(:,1)./sum(double_prop_subj(:,1:2),2))
+hold off
+%%
+ratio_ptarget_single_double = (single_prop_subj(:,1)./sum(single_prop_subj(:,1:2),2)) ./ ...
+    (double_prop_subj(:,1)./sum(double_prop_subj(:,1:2),2));
+plot( [ratio_ptarget_single_double ones(size(single_prop_subj,1),1)])
+hold on
+plot(mean(ratio_ptarget_single_double) * ones(size(single_prop_subj,1),1));
+title('P(T|S)/P(A|S) / P(T|D)/P(A|D)  per indiv')
 %% Estimation
 SubjData = cell(num_subj,1);
 SubjBF = ones(num_subj,1);

@@ -25,14 +25,13 @@ function r = gbetaprrnd(a,b,p,q,varargin)
 
 %   Mike Sheppard
 %   Last Modified 23-Mar-2011
+%   Modified by Remi daviet 16-Feb-2018
 
 
 if nargin < 4
     error('gbetaprrndrnd:TooFewInputs',...
           'Requires at least four input argument.'); 
 end
-
-if isempty(varargin), varargin={1}; end %Scalar
 
 %Transformation of Beta Prime Distribution
 r = betaprrnd(a,b,varargin{:});

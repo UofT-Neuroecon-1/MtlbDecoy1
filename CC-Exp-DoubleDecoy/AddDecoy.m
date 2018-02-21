@@ -21,7 +21,12 @@ step_limit = min(max_step_sizes) - 1;
 
 %% Add decoy
 decoys = [X_indif(target_and_alt(1),:);X_indif(target_and_alt(1),:)];
-num_step = randsample(floor(step_limit/2):step_limit,1);
+try
+    num_step = randsample(floor(step_limit/2):step_limit,1);
+catch
+    sca;
+    error('Call the supervisor');
+end
 decoys(1,:) = decoys(1,:) - attrSign .* (num_step+1) .* step_sizes; %Remove num_step+1 stepsize from decoy attributes
 decoys(2,:) = decoys(2,:) - attrSign .* num_step .* step_sizes; %Remove num_step stepsize from decoy attribute
 X_full = [X_indif(1,:);X_indif(2,:);decoys];

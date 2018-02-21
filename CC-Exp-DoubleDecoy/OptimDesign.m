@@ -115,14 +115,10 @@ end
 
 %% Find optimal question
 if strcmp(type,'Shannon')
-    for m=1:M
-       if strcmp(Particles{m}.model,'PDN')
-           OptimTheta = Particles{m}.OptimTheta;
-           param = Particles{m}.param;
-       end
-    end
+    OptimTheta = Particles{1}.OptimTheta;
+    param = Particles{1}.param;
     subTheta = OptimTheta(:,1:floor(param.P/2));
-    objective = @(X) -ObjectiveFunctionShannon( X, subTheta,param,'PDN' );
+    objective = @(X) -ObjectiveFunctionShannon( X, subTheta,param,Particles{1}.model );
 elseif strcmp(type,'ADO')
     objective = @(X) -ObjectiveFunctionModelADO( X, Particles );
 elseif strcmp(type,'BosieModel')

@@ -23,6 +23,7 @@ function r = betaprrnd(a,b,varargin)
 
 %   Mike Sheppard
 %   Last Modified 15-Mar-2011
+%   Modified: Remi Daviet 16-Feb-2018
 
 
 if nargin < 2
@@ -30,11 +31,10 @@ if nargin < 2
           'Requires at least two input argument.'); 
 end
 
-if isempty(varargin), varargin={1}; end %Scalar
 
 %X~Gamma(a,1) and Y~Gamma(b,1) then X/Y~BetaPr(a,b)
-gam1=gamrnd(a,1,varargin{:});
-gam2=gamrnd(b,1,varargin{:});
+gam1=gamrnd(a,ones(size(a)),varargin{:});
+gam2=gamrnd(b,ones(size(b)),varargin{:});
 r = gam1./gam2;
 
 end

@@ -26,8 +26,8 @@ K = param.K;
             %Draw from predictive conditional on previous subjects
             alpha_hyper_sigma = particle.hypertheta(1) + subj - 1; 
             alpha_hyper_beta = (particle.hypertheta(3) + subj - 1).*ones(1,K);
-            beta_hyper_sigma = particle.hypertheta(2) + sum(particle.theta(1:subj-1,2));
-            beta_hyper_beta = particle.hypertheta(4) + sum(particle.theta(1:subj-1,3:2+K));
+            beta_hyper_sigma = particle.hypertheta(2) + sum(particle.theta(1:subj-1,2),1);
+            beta_hyper_beta = particle.hypertheta(4) + sum(particle.theta(1:subj-1,3:2+K),1);
             particle.theta(subj,:) = [betarnd(3,1) ...
                 gbetaprrnd(1,alpha_hyper_sigma,1,beta_hyper_sigma) ...
                 gbetaprrnd(ones(1,K),alpha_hyper_beta,ones(1,K),beta_hyper_beta,1,K) ];

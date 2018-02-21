@@ -20,7 +20,7 @@ debug_mode = false;
 
 %% Simulation param
 trueModel = 'PDN';
-trueTheta = [1, 0, 8, 15];
+trueTheta = [1, 0, 8, 8];
 % trueModel = 'RemiProbitNorm';
 % trueTheta = [1.11,1.06,0.88,0.70,0.85,0.64,0.62,2.28,19.47,1.43,1.82,1.17,1.14,0.49,0.55,0.93]; %subject 1
 % trueTheta = [0.83,1.27,1.08,1.14,1.07,1.12,1.71,2.83,7.03,1.37,7.73,1.86,2.84,1.26,0.99,0.67]; %subject 2
@@ -31,9 +31,9 @@ param = struct;
 param.G = 2;
 param.P = 128;
 param.K = size(attrVals,1);
-param.Msteps = 3;
+param.Msteps = 5;
 param.NormDraw = mvnrnd(zeros(4,1),eye(4),1000);
-Models = {'PDN','Logit'};%;'Logit'
+Models = {'PDNNew'};%;'Logit'
 Particles = cell(numel(Models),1);
 initTheta = cell(param.G,param.P);
 for m=1:numel(Models)
@@ -71,12 +71,12 @@ for obs = 1:num_non_check+num_consistency_check
 %     Xs{obs,1} = reshape( X_Doptim(obs,:),[param.K size(X_Doptim(obs,:),2)/param.K] )';
     if obs <= opt_num_quest
         %% Optimal Questions
-        X_optim = OptimDesign( Particles, num_option_list(obs), attrVals, attrSign, 'Shannon' );
+        X_optim = OptimDesign( Particles, num_option_list(obs), attrVals, attrSign,'Shannon');% 'Shannon' );
         Xs{obs,1} = reshape( X_optim,[param.K size(X_optim,2)/param.K] )';
     elseif obs <= opt_num_quest + num_double_decoy
         %% Compute Decoys
         X_indif = FindIndif( Particles, attrVals, attrSign );
-        X_indif = reshape( X_indif,[param.K size(X_indif,2)/param.K] )';
+        X_indif = reshape( X_indif,[param.K size(X_indif,2)/param.K] )'
         XIndifs{obs,1} = X_indif;
         [ X_1decoy, X_2decoy , TargetAndAltX1, TargetAndAltX2 ] = AddDecoy(X_indif, attrVals, attrSign );
         Xs{obs,1} = X_1decoy; %Single decoy
@@ -181,8 +181,8 @@ proba_target_binary =zeros(numel(list_decoy_quest),1);
 for i = 1:numel(list_decoy_quest)
     obs = list_decoy_quest(i);
     ExpectedPropChoice = ExpectedPropChoice +  list_ML(TargetAndAltX(obs,:),obs)';
-    likelihood = ProbaChoice( Xs{obs} , Particles{1}.model, trueTheta, attrSign, param );
-    likelihoodBinary = ProbaChoice( Xs{obs}(TargetAndAltX(obs,:),:) , Particles{1}.model, trueTheta, attrSign, param );
+    likelihood = ProbaChoice( Xs{obs} , trueModel, trueTheta, attrSign, param );
+    likelihoodBinary = ProbaChoice( Xs{obs}(TargetAndAltX(obs,:),:) , trueModel, trueTheta, attrSign, param );
     proba_target(i) = likelihood(TargetAndAltX(obs,1)) / likelihood(TargetAndAltX(obs,2));
     proba_target_binary(i) = likelihoodBinary(1) / likelihoodBinary(2);
     TruePropChoice = TruePropChoice + likelihood(TargetAndAltX(obs,:))';

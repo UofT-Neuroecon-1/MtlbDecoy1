@@ -10,9 +10,9 @@ global attrVals attrNames attrSign
 attrVals = cell(2,1);
 attrNames = cell(2,1);
 attrVals{1}= (5:50);          attrNames{1}="Annual fee ($)";
-attrVals{2}= 0:0.25:3;    attrNames{2}="Reward (%)";
+attrVals{2}= 0.20:0.1:5;     attrNames{2}="Reward (%)";
 attrSign = [-1, 1];
-num_option_list = [2*ones(10,1);3*ones(20,1)];
+num_option_list = [3*ones(30,1)];
 opt_num_quest = numel(num_option_list);
 num_double_decoy = 25;
 list_double_decoy = opt_num_quest + num_double_decoy + randsample(num_double_decoy,num_double_decoy);
@@ -26,9 +26,9 @@ param = struct;
 param.G = 3;
 param.P = 128;
 param.K = size(attrVals,1);
-param.Msteps = 4;
+param.Msteps = 10;
 param.NormDraw = mvnrnd(zeros(4,1),eye(4),1000);
-Models = {'PDN'};
+Models = {'PDNNew'};
 Particles = cell(numel(Models),1);
 initTheta = cell(param.G,param.P);
 for m=1:numel(Models)

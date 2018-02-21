@@ -3,7 +3,7 @@ function [ logLik ] = LogLikelihood( Xs, ChoiceList, subj , model , particle, pa
 %   Detailed explanation goes here
 logLik = 0;
 T = size(Xs,1);
-parfor t = 1:T
+for t = 1:T
    proba_choice = ProbaChoice( Xs{t}, subj , model , particle, param );
    logLik = logLik + log(proba_choice(ChoiceList(t)));
 end

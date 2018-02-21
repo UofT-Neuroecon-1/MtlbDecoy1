@@ -14,7 +14,7 @@ param = struct;
 param.G = 3; % Number of particles group
 param.P = 256; % Number of particles per group
 param.Adaptive = true; % Use the adaptive SMC (see Durham, Geweke 2014).
-param.Msteps = 20; % Number of mutate steps
+param.Msteps = 40; % Number of mutate steps
 param.Tag = 'StndVsHierPDN'; % This tag will be added to the output file
 param.savefile = ['Analysis' filesep param.Tag sprintf('-%.0fx%.0f-M%.0f-',param.G,param.P,param.Msteps) datestr(datetime('now'),'yyyy-mm-dd-HH.MM') '.mat'];
 
@@ -54,7 +54,6 @@ clear k
 % Load files list
 fileslist = dir(['..\CC-Exp\Analysis\LabData' filesep 'Optim-BRLAB*.mat']);
 num_subj = size(fileslist,1);
-num_subj = 3;
 Data = cell(num_subj,1);
 subjList = [];
 for file = 1:num_subj

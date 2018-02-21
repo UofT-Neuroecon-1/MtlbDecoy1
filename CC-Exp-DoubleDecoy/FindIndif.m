@@ -32,14 +32,10 @@ function marginal_likelihood = MarginalLikelihood( X, subTheta,param, model )
 end
 
 %% Algo
- for m=1:M
-   if strcmp(Particles{m}.model,'PDN')
-       OptimTheta = Particles{m}.OptimTheta;
-       param = Particles{m}.param;
-   end
-end
+OptimTheta = Particles{1}.OptimTheta;
+param = Particles{1}.param;
 subTheta = OptimTheta(:,1:floor(param.P/2));
-objective = @(X) ObjectiveIndif( X, subTheta,param, 'PDN' );
+objective = @(X) ObjectiveIndif( X, subTheta,param, Particles{1}.model );
 
 %Draw num_start starting points
 % num_start = 4;
@@ -59,20 +55,34 @@ X_1 = zeros(1,2);
 X_2 = zeros(1,2);
 range1 = numel(attrVals{1});
 range2 = numel(attrVals{2});
-% First attribute
-X_1(1) = randsample(attrVals{1}(floor(range1/8):floor(range1/2)-2),1);
-X_1(2) = randsample(attrVals{1}(ceil(range1/2)+2:ceil(7*range1/8)),1);
-% Second attribute
-X_2(1) = randsample(attrVals{2}(1:floor(range2/2)),1);
-X_2(2) = randsample(attrVals{2}(ceil(range2/2):end),1);
+%find a valid indifference set
+valid = false;
+while ~valid
+    % First attribute
+    X_1(1) = randsample(attrVals{1}(floor(range1/8):floor(range1/2)-2),1);
+    X_1(2) = randsample(attrVals{1}(ceil(range1/2)+2:ceil(7*range1/8)),1);
+    % Second attribute
+    X_2(1) = randsample(attrVals{2}(2:floor(range2/2)),1);
+    X_2(2) = randsample(attrVals{2}(ceil(range2/2):end),1);
 
-objective = @(X_2) ObjectiveIndif( [X_1(1) X_2(1) X_1(2) X_2(2)], subTheta,param, 'PDN' );
-%% Optimize from best starting point
-X_2 = PathToMin(objective,X_2, {attrVals{2}} );
-X = [X_1(1) X_2(1) X_1(2) X_2(2)];
+    objective = @(X_2) ObjectiveIndif( [X_1(1) X_2(1) X_1(2) X_2(2)], subTheta,param, Particles{1}.model );
+    %% Optimize from best starting point
+    try
+        X_2 = PathToMin(objective,X_2, {attrVals{2}(2:end)} );
+    catch ME
+        sca();
+        error('Error: Call the supervisor');
+    end
+    X = [X_1(1) X_2(1) X_1(2) X_2(2)];
+    %% Check if they are at least 2 stepsizes away
+    A1 = abs([X_1(2)-X_1(1) X_2(2)-X_2(1)]);
+    A2 = 4*[attrVals{1}(2)-attrVals{1}(1) attrVals{2}(2)-attrVals{2}(1)];
+    valid = all(A1 >= A2);
+end
+
 
 %% Check choice proba
-marginal_likelihood = MarginalLikelihood( X, subTheta,param, 'PDN' )
+marginal_likelihood = MarginalLikelihood( X, subTheta,param, Particles{1}.model )
 if marginal_likelihood(1) < marginal_likelihood(2)
     X = [X_1(2) X_2(2) X_1(1) X_2(1)];
 end

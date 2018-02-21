@@ -1,6 +1,7 @@
 function [ EstimationOutput ] = EstimationAdaptiveSMC( SubjData, param, backup_file )
 % External libraries
-addpath('ProbabilityDistributions')
+[filepath,~,~] = fileparts(mfilename('fullpath'));
+addpath([filepath filesep 'ProbabilityDistributions'])
 
 %% get data size
 param.num_subj = numel(SubjData); 
@@ -77,8 +78,10 @@ end
 % create output object
 EstimationOutput = struct;
 % Save Data
+EstimationOutput.param = param;
 EstimationOutput.Particles = Particles;
 EstimationOutput.log_marg_like = log_marg_like;
+%%
 save(param.savefile,'EstimationOutput');
 
 end

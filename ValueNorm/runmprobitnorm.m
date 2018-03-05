@@ -23,8 +23,8 @@ relative='none';
 
 
 %type='setsize';
- type='trinary';
-%type='simul';
+% type='trinary';
+type='simul';
 %type='simulss';
 %
 % Which choice sets in analysis?
@@ -338,8 +338,8 @@ for s=1:S
 end
 
 if pool==1
-%outall=mprobitnormalized(yc(tind),cell2mat(X),Vc(tind),par0,LB,UB,opts);
-EstimationSMC( SubjData, param, backup_file )
+outall=mprobitnormalized(yc(tind),cell2mat(X),Vc(tind),par0,LB,UB,opts);
+
 displayResults(outall,names,par0,J,i0);
 save([path 'outall.mat'],'outall')
 else

@@ -67,15 +67,15 @@ for s=1:40
 end
 save ExampleData 'SubjData' 'par'
 
-load('simulout.mat')
-for s=1:40
-    for t=1:250
-        temp{t}=V(t,:,s)';
-    end
-    SubjData{s}.ChoiceList=choice{s};
-end
-SubjData{s}.Xs{t}
-save ExampleData 'SubjData' 'par'
+% load('simulout.mat')
+% for s=1:40
+%     for t=1:250
+%         temp{t}=V(t,:,s)';
+%     end
+%     SubjData{s}.ChoiceList=choice{s};
+% end
+% SubjData{s}.Xs{t}
+% save ExampleData 'SubjData' 'par'
 
 % % Load files list
 % fileslist = dir(['..\CC-Exp\Analysis\LabData' filesep 'Optim-BRLAB*.mat']);

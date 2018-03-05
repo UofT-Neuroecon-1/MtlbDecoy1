@@ -15,15 +15,18 @@ param.G = 3; % Number of particles group
 param.P = 256; % Number of particles per group
 param.Adaptive = true; % Use the adaptive SMC (see Durham, Geweke 2014).
 param.Msteps = 40; % Number of mutate steps
-param.Tag = 'StndVsHierPDN'; % This tag will be added to the output file
-param.savefile = ['Analysis' filesep param.Tag sprintf('-%.0fx%.0f-M%.0f-',param.G,param.P,param.Msteps) datestr(datetime('now'),'yyyy-mm-dd-HH.MM') '.mat'];
+param.Tag = 'StndPDN'; % This tag will be added to the output file
 
+param.savefile = ['Analysis' filesep param.Tag sprintf('-%.0fx%.0f-M%.0f-',param.G,param.P,param.Msteps) datestr(datetime('now'),'yyyy-mm-dd-HH.MM') '.mat'];
+if ~exist('Analysis','dir')
+    mkdir('Analysis')
+end
 % Models to use for estimations
 % Each model should have a corresponding entry in the following files:
 % InitParticle : Returns a draw from prior for one particle
 % Mutate : The Metropolis-Hastings Mutation step
 % ProbaChoice : The likelihood of one observation given a model and particle
-param.Models = {'RemiStand';'HierarchicalProbit'};
+param.Models = {'PDNNew'}; %{'RemiStand';'HierarchicalProbit'};
 
 % Model specific parameters
 param.NormDraw = mvnrnd(zeros(4,1),eye(4),1000); % Draws for GHK
@@ -56,13 +59,22 @@ clear k
 % SubjData{n}.ChoiceList : Vector of T x 1 Choices
 
 load('simulout.mat')
-data.X=V;
 for s=1:40
     for t=1:250
-        SubjData{s}.Xs{t}=V(t,:,s);
+        SubjData{s}.Xs{t}=V(t,:,s)';
     end
     SubjData{s}.ChoiceList=choice{s};
 end
+save ExampleData 'SubjData' 'par'
+
+load('simulout.mat')
+for s=1:40
+    for t=1:250
+        temp{t}=V(t,:,s)';
+    end
+    SubjData{s}.ChoiceList=choice{s};
+end
+SubjData{s}.Xs{t}
 save ExampleData 'SubjData' 'par'
 
 % % Load files list
@@ -93,3 +105,10 @@ load ExampleData
 
 %% Estimation
 EstimationOutput = EstimationAdaptiveSMC( SubjData, param, backup_file)
+
+%%
+if strcmp(param.Models{1},'PDNNew')
+    EstimationOutput.Particles{1}.postmeans
+    fprintf('Posterior Mean (Across Subjects) \n')
+    fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
+end

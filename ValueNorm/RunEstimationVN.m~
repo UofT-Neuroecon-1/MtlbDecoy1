@@ -16,14 +16,17 @@ param.P = 256; % Number of particles per group
 param.Adaptive = true; % Use the adaptive SMC (see Durham, Geweke 2014).
 param.Msteps = 40; % Number of mutate steps
 param.Tag = 'StndVsHierPDN'; % This tag will be added to the output file
-param.savefile = ['Analysis' filesep param.Tag sprintf('-%.0fx%.0f-M%.0f-',param.G,param.P,param.Msteps) datestr(datetime('now'),'yyyy-mm-dd-HH.MM') '.mat'];
 
+param.savefile = ['Analysis' filesep param.Tag sprintf('-%.0fx%.0f-M%.0f-',param.G,param.P,param.Msteps) datestr(datetime('now'),'yyyy-mm-dd-HH.MM') '.mat'];
+if ~exist('Analysis','dir')
+    mkdir('Analysis')
+end
 % Models to use for estimations
 % Each model should have a corresponding entry in the following files:
 % InitParticle : Returns a draw from prior for one particle
 % Mutate : The Metropolis-Hastings Mutation step
 % ProbaChoice : The likelihood of one observation given a model and particle
-param.Models = {'RemiStand';'HierarchicalProbit'};
+param.Models = {'PDNNew'}; %{'RemiStand';'HierarchicalProbit'};
 
 % Model specific parameters
 param.NormDraw = mvnrnd(zeros(4,1),eye(4),1000); % Draws for GHK
@@ -37,16 +40,9 @@ param.NormDraw = mvnrnd(zeros(4,1),eye(4),1000); % Draws for GHK
 % param.attrVals{6}= (0:0.25:2.5);    param.attrNames{6}="Currency conversion fee (%)";
 % param.attrVals{7}= [0,15,30,60,90,120];    param.attrNames{7}="Warranty on purchase (days)";
 % param.attrSign = [-1, -1, -1, 1, -1, -1, 1];
-param.attrVals = cell(7,1);
-param.attrNames = cell(7,1);
-param.attrVals{1}= (5:25);          param.attrNames{1}="Annual fee ($)";
-param.attrVals{2}= (0:0.1:0.5);    param.attrNames{2}="Transaction fee ($)";
-param.attrVals{3}= (5:1:25);        param.attrNames{3}="Interest charged (%)";
-param.attrVals{4}= 0:0.25:2.5;    param.attrNames{4}="Reward (%)";
-param.attrVals{5}= (0:0.25:2.5);    param.attrNames{5}="ATM surcharge ($)";
-param.attrVals{6}= (0:0.25:2.5);    param.attrNames{6}="Currency conversion fee (%)";
-param.attrVals{7}= [0,15,30,60,90,120];    param.attrNames{7}="Warranty on purchase (days)";
-param.attrSign = [-1, -1, -1, 1, -1, -1, 1];
+
+param.attrVals{1}= (0:4);          param.attrNames{1}="Bid";
+param.attrSign = [1];
 
 param.K = numel(param.attrVals); 
 param.attrMax = zeros(1,param.K);
@@ -63,13 +59,22 @@ clear k
 % SubjData{n}.ChoiceList : Vector of T x 1 Choices
 
 load('simulout.mat')
-data.X=V;
 for s=1:40
     for t=1:250
-        SubjData{s}.Xs{t}=V(t,:,s);
+        SubjData{s}.Xs{t}=V(t,:,s)';
     end
     SubjData{s}.ChoiceList=choice{s};
 end
+save ExampleData 'SubjData' 'par'
+
+load('simulout.mat')
+for s=1:40
+    for t=1:250
+        temp{t,1}=V(t,:,s)';
+    end
+    SubjData{s}.ChoiceList=choice{s};
+end
+SubjData{s}.Xs{t}
 save ExampleData 'SubjData' 'par'
 
 % % Load files list

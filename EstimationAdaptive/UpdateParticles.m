@@ -1,4 +1,4 @@
-5function [ Particles ] = UpdateParticles( Particles, SubjData, subj, obs, param)
+function [ Particles ] = UpdateParticles( Particles, SubjData, subj, obs, param)
 %UPDATEPARTICLES Update particles with a resample-move(SMC) algorithm
 
 

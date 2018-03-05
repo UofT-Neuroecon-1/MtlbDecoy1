@@ -332,8 +332,14 @@ Vc=[normV{:}];
 
 pool=1;
 
+for s=1:S
+    SubjData{s}.Xs=normV{s};
+    SubjData{s}.ChoiceList=y{s};
+end
+
 if pool==1
-outall=mprobitnormalized(yc(tind),cell2mat(X),Vc(tind),par0,LB,UB,opts);
+%outall=mprobitnormalized(yc(tind),cell2mat(X),Vc(tind),par0,LB,UB,opts);
+EstimationSMC( SubjData, param, backup_file )
 displayResults(outall,names,par0,J,i0);
 save([path 'outall.mat'],'outall')
 else

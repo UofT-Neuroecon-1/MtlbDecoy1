@@ -61,7 +61,7 @@ for m=1:M
         accept_count = zeros(param.G,param.P);
         for g = 1:param.G
             % Get the Cholesky decomposition of the Covariance matrix for each
-            % sumbject's parameters;
+            % subject's parameters;
             chol_cov_theta = CholCovTheta( Particles{m}.particle(g,:), param );
             % Copy particles for parallel looping
             temp_Particles = Particles{m}.particle(g,:);

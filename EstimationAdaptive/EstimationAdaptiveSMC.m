@@ -12,15 +12,15 @@ Particles = cell(M,1);
 for m=1:M
     Particles{m}.particle = cell(param.G,param.P);
     Particles{m}.weights = ones(param.G,param.P);
+    % Initialize output values
+    Particles{m}.log_marg_like = zeros(param.num_subj,param.G);
+    Particles{m}.log_marg_like_total = zeros(param.G,1);
+    Particles{m}.group_postmeans = cell(param.G,1);
+    Particles{m}.postmeans = [];
+    Particles{m}.group_postsd = cell(param.G,1);
     for g=1:param.G
         for p=1:param.P
             Particles{m}.particle{g,p} = InitParticle(m,param);
-            % Initialize output values
-            Particles{m}.log_marg_like = zeros(param.num_subj,param.G);
-            Particles{m}.log_marg_like_total = zeros(param.G,1);
-            Particles{m}.group_postmeans = cell(param.G,1);
-            Particles{m}.postmeans = [];
-            Particles{m}.group_postsd = cell(param.G,1);
         end
     end
 end
@@ -41,7 +41,7 @@ if nargin > 2
        end
    end
 end
-
+clear BackupData
 %% Run SMC
 for subj = start_subj:param.num_subj
     fprintf('Begin Subject %d\n',subj)
@@ -82,7 +82,7 @@ EstimationOutput.param = param;
 EstimationOutput.Particles = Particles;
 EstimationOutput.log_marg_like = log_marg_like;
 %%
-save(param.savefile,'EstimationOutput');
+save(param.savefile,'EstimationOutput','param');
 
 end
 

@@ -50,18 +50,6 @@ end
 num_subj = numel(subjList);
 savefilename = ['Analysis' filesep 'Aggreg' filesep 'AggDD-' Tag sprintf('-%.0fx%.0f-M%.0f-',param.G,param.P,param.Msteps) datestr(datetime('now'),'yyyy-mm-dd-HH.MM') '.mat'];
 
-%% Load previous analysis
-OldAggreg = struct;
-listoldfiles = dir(['Analysis' filesep 'Aggreg' filesep 'AggDD-' Tag sprintf('-%.0fx%.0f-M%.0f-*',param.G,param.P,param.Msteps)]);
-dtnum_index = 0;
-if numel(listoldfiles) > 0
-    for f = 1:numel(listoldfiles)
-        if datenum(listoldfiles(f).date) > dtnum_index
-            OldAggreg = load([listoldfiles(f).folder filesep listoldfiles(f).name]);
-            dtnum_index = datenum(listoldfiles(f).date);
-        end
-    end
-end
 
 %% Decoy analysis
 DecoyModelFree = struct;
@@ -74,12 +62,15 @@ single_prop_subj = [];
 double_prop_subj = [];
 num_sdec_questions = [];
 num_ddec_questions = [];
+mediantime = [];
 for subj = 1:num_subj
     sub_data = Data{subjList(subj)};
     Consistency(subj) = mean(sub_data.ConsistencyCheck);
     bin_decoy_obs = ~isnan(sub_data.TargetAndAltX(:,1));
     DecoyOrAlt = sum(mean(sub_data.TargetAndAltX(bin_decoy_obs,:)== sub_data.ChoiceList(bin_decoy_obs,:)));
+    median_rt = median(sub_data.timeRecords.answer-sub_data.timeRecords.show);
     if Consistency(subj) > 0.3 && DecoyOrAlt > 0.7
+        mediantime = [mediantime; median_rt];
         DecoyModelFree.NumDecoychoiceList = [DecoyModelFree.NumDecoychoiceList;sub_data.NumDecoychoice];
         for obs =1:numel(sub_data.ChoiceList)
             if bin_decoy_obs(obs)
@@ -99,34 +90,151 @@ DecoyModelFree.TotalDecoyChoice = sum(DecoyModelFree.NumDecoychoiceList);
 propDecoy = DecoyModelFree.TotalDecoyChoice ./ sum(DecoyModelFree.TotalDecoyChoice)
 DecoyModelFree.single_prop_subj = single_prop_subj;
 DecoyModelFree.double_prop_subj = double_prop_subj;
+DecoyModelFree.single_prop = mean(single_prop_subj(:,1) ./ sum(single_prop_subj(:,1:2),2))
+DecoyModelFree.double_prop = mean(double_prop_subj(:,1) ./ sum(double_prop_subj(:,1:2),2))
+DecoyModelFree.single_prop_se = std(single_prop_subj(:,1) ./ sum(single_prop_subj(:,1:2),2)) / sqrt(size(single_prop_subj(:,1),1));
+DecoyModelFree.double_prop_se = std(double_prop_subj(:,1) ./ sum(double_prop_subj(:,1:2),2)) / sqrt(size(double_prop_subj(:,1),1));
 DecoyModelFree.num_sdec_questions = num_sdec_questions;
 DecoyModelFree.num_ddec_questions = num_ddec_questions;
-%Single decoy prop
-singleProp = sum((AggregTargetChoice(AggregNumOptions==3,:)));
-DecoyModelFree.singleProp = singleProp(1:2) / sum(singleProp(1:2))
-%Double decoy prop
-doubleProp = sum(AggregTargetChoice(AggregNumOptions==4,:));
-DecoyModelFree.doubleProp = doubleProp(1:2) / sum(doubleProp(1:2))
+
 %Double decoy prop | single decoy prop = true
 list_has_sdec = single_prop_subj(:,1) > single_prop_subj(:,2);
-list_has_ddec = double_prop_subj(:,1) > double_prop_subj(:,2);
+DecoyModelFree.single_prop_subj_c = single_prop_subj(list_has_sdec,:);
+DecoyModelFree.double_prop_subj_c = double_prop_subj(list_has_sdec,:);
 prop_cond_sdec = mean(single_prop_subj(list_has_sdec,:));
 prop_cond_ddec = mean(double_prop_subj(list_has_sdec,:));
-DecoyModelFree.singleProp_cond = prop_cond_sdec(1:2) / sum(prop_cond_sdec(1:2))
-DecoyModelFree.doubleProp_cond = prop_cond_ddec(1:2) / sum(prop_cond_ddec(1:2))
+DecoyModelFree.singleProp_cond = prop_cond_sdec(1:2) / sum(prop_cond_sdec(1:2));
+DecoyModelFree.doubleProp_cond = prop_cond_ddec(1:2) / sum(prop_cond_ddec(1:2));
+DecoyModelFree.singleProp_cond_se = std(single_prop_subj(list_has_sdec,1) ./ sum(single_prop_subj(list_has_sdec,1:2),2)) / sqrt(sum(list_has_sdec));
+DecoyModelFree.doubleProp_cond_se = std(double_prop_subj(list_has_sdec,1) ./ sum(double_prop_subj(list_has_sdec,1:2),2))  / sqrt(sum(list_has_sdec));
 
-%%
-histogram(single_prop_subj(:,1)./sum(single_prop_subj(:,1:2),2))
-hold on
-histogram(double_prop_subj(:,1)./sum(double_prop_subj(:,1:2),2))
-hold off
-%%
+%sort by median response time
+[sorted_med_rtime,sorted_med_rtime_i] = sort(mediantime);
+
 ratio_ptarget_single_double = (single_prop_subj(:,1)./sum(single_prop_subj(:,1:2),2)) ./ ...
     (double_prop_subj(:,1)./sum(double_prop_subj(:,1:2),2));
-plot( [ratio_ptarget_single_double ones(size(single_prop_subj,1),1)])
+plot(repmat(sorted_med_rtime,1,2), [ratio_ptarget_single_double(sorted_med_rtime_i) ones(size(single_prop_subj,1),1)])
 hold on
-plot(mean(ratio_ptarget_single_double) * ones(size(single_prop_subj,1),1));
-title('P(T|S)/P(A|S) / P(T|D)/P(A|D)  per indiv')
+plot(repmat(sorted_med_rtime,1,2), [single_prop_subj(sorted_med_rtime_i) 0.5*ones(size(single_prop_subj,1),1)])
+mean_ratio = mean(ratio_ptarget_single_double);
+se_ratio = std(ratio_ptarget_single_double)/numel(ratio_ptarget_single_double)^0.5;
+plot(sorted_med_rtime,mean(ratio_ptarget_single_double) * ones(size(single_prop_subj,1),1));
+xlabel('median rt')
+title({'P(T|S)/P(A|S) / P(T|D)/P(A|D)  per indiv (sorted by median RT)',sprintf("mean: %.4f , se: %.4f",mean_ratio,se_ratio)})
+hold off
+
+%% p values (Absolute)
+tstat = ([DecoyModelFree.single_prop DecoyModelFree.double_prop]- 0.5)./ [DecoyModelFree.single_prop_se DecoyModelFree.double_prop_se];
+p_val = tcdf(tstat,size(single_prop_subj,1)-1,'upper');
+fprintf("\nAbsolute proportions of Target Choice\n");
+fprintf("n = %d\n",size(single_prop_subj,1));
+fprintf("\t p_single \t p_double \nmean: \t%.4f \t%.4f\n",DecoyModelFree.single_prop,DecoyModelFree.double_prop);
+fprintf("s.e.: \t%.4f \t%.4f\n",DecoyModelFree.single_prop_se,DecoyModelFree.double_prop_se);
+fprintf("t(%d): \t%.4f \t%.4f\n",size(single_prop_subj,1)-1,tstat(1),tstat(2));
+fprintf("p-val: \t%.4f \t%.4f\n---\n",p_val(1),p_val(2));
+
+% paired diff
+mean_diff=mean(single_prop_subj(:,1) ./ sum(single_prop_subj(:,1:2),2) - double_prop_subj(:,1) ./ sum(double_prop_subj(:,1:2),2));
+sd_diff=std(single_prop_subj(:,1) ./ sum(single_prop_subj(:,1:2),2) - double_prop_subj(:,1) ./ sum(double_prop_subj(:,1:2),2));
+tstat= sqrt( size(single_prop_subj,1) ) * mean_diff / sd_diff;
+p_val_diff = tcdf(tstat,size(single_prop_subj,1)-1,'upper');
+fprintf("mean diff: \t\t%.5f\n",mean_diff)
+fprintf("s.e.(paired): \t%.5f\n",sd_diff/sqrt(size(single_prop_subj,1)))
+fprintf("t (paired): \t%.5f\n",tstat)
+fprintf("p (paired): \t%.5f\n",p_val_diff)
+%% p values (Conditional)
+tstat = ([DecoyModelFree.singleProp_cond(:,1) DecoyModelFree.doubleProp_cond(:,1)]- 0.5)./ [DecoyModelFree.singleProp_cond_se DecoyModelFree.doubleProp_cond_se];
+p_val = tcdf(tstat,size(single_prop_subj,1)-1,'upper');
+fprintf("\n\nProportions of Target Choice Conditional on P(T|Single)>0.5\n");
+fprintf("n = %d\n",sum(list_has_sdec,1));
+fprintf("\t p_single \t p_double \nmean: \t%.4f \t%.4f\n",DecoyModelFree.singleProp_cond(:,1),DecoyModelFree.doubleProp_cond(:,1));
+fprintf("s.e.: \t%.4f \t%.4f\n",DecoyModelFree.singleProp_cond_se,DecoyModelFree.doubleProp_cond_se);
+fprintf("t(%d): \t%.4f \t%.4f\n",sum(list_has_sdec,1)-1,tstat(1),tstat(2));
+fprintf("p-val: \t%.4f \t%.4f\n---\n",p_val(1),p_val(2));
+
+% paired diff
+diff_list = DecoyModelFree.single_prop_subj_c(:,1) ./ sum(DecoyModelFree.single_prop_subj_c(:,1:2),2) ...
+    - DecoyModelFree.double_prop_subj_c(:,1) ./ sum(DecoyModelFree.double_prop_subj_c(:,1:2),2);
+mean_diff=mean(diff_list);
+sd_diff=std(diff_list);
+tstat= sqrt( size(diff_list,1) ) * mean_diff / sd_diff;
+p_val_diff = tcdf(tstat,size(diff_list,1)-1,'upper');
+fprintf("mean diff: \t\t%.5f\n",mean_diff)
+fprintf("s.e.(paired): \t%.5f\n",sd_diff/sqrt(size(single_prop_subj,1)))
+fprintf("t (paired): \t%.5f\n",tstat)
+fprintf("p (paired): \t%.5f\n",p_val_diff)
+
+%% p values (Conditional on No effect)
+n_cond_no = sum(~list_has_sdec,1);
+single_prop_cond_no = single_prop_subj(~list_has_sdec,:);
+double_prop_cond_no = double_prop_subj(~list_has_sdec,:);
+se_cond_no = std([single_prop_cond_no(:,1),double_prop_cond_no(:,1)]) / sqrt(n_cond_no);
+tstat =([mean(single_prop_cond_no(:,1)) mean(double_prop_cond_no(:,1))]- 0.5)./ se_cond_no;
+p_val = tcdf(tstat,n_cond_no-1,'upper');
+fprintf("\n\nProportions of Target Choice Conditional on P(T|Single)<=0.5\n");
+fprintf("n = %d\n",n_cond_no);
+fprintf("\t p_single \t p_double \nmean: \t%.4f\t%.4f\n",mean(single_prop_cond_no(:,1)),mean(double_prop_cond_no(:,1)));
+fprintf("s.e.: \t%.4f \t%.4f\n", se_cond_no(1),se_cond_no(2));
+fprintf("t(%d): \t%.3f\t%.3f\n",n_cond_no-1,tstat(1),tstat(2));
+fprintf("p-val: \t%.4f \t%.4f\n---\n",p_val(1),p_val(2));
+
+% paired diff
+diff_list = single_prop_cond_no(:,1) ./ sum(single_prop_cond_no(:,1:2),2) ...
+    - double_prop_cond_no(:,1) ./ sum(double_prop_cond_no(:,1:2),2);
+mean_diff=mean(diff_list);
+sd_diff=std(diff_list);
+tstat= sqrt( size(diff_list,1) ) * mean_diff / sd_diff;
+p_val_diff = tcdf(tstat,size(diff_list,1)-1,'upper');
+fprintf("mean diff: \t\t%.5f\n",mean_diff)
+fprintf("s.e.(paired): \t%.5f\n",sd_diff/sqrt(size(single_prop_subj,1)))
+fprintf("t (paired): \t%.5f\n",tstat)
+fprintf("p (paired): \t%.5f\n",p_val_diff)
+
+%%
+histogram(single_prop_subj(:,1)./sum(single_prop_subj(:,1:2),2),0.2:0.05:0.8)
+hold on
+histogram(double_prop_subj(:,1)./sum(double_prop_subj(:,1:2),2),0.2:0.05:0.8)
+title('P(T|S)/P(A|S) (blue) and P(T|D)/P(A|D) (red)  per indiv ')
+hold off
+
+%%
+subplot(2,1,1)
+histogram(single_prop_subj(:,1)./sum(single_prop_subj(:,1:2),2),0.2:0.05:0.8)
+subplot(2,1,2)
+histogram(double_prop_subj(:,1)./sum(double_prop_subj(:,1:2),2),0.2:0.05:0.8,'FaceColor','red')
+%% 
+means = [DecoyModelFree.singleProp_cond(1),DecoyModelFree.doubleProp_cond(1)]
+serr = [DecoyModelFree.singleProp_cond_se ,DecoyModelFree.doubleProp_cond_se ]
+bar(means)
+hold on
+errorbar(1:2,means,serr,'.')
+plot([0 3],[0.5 0.5])
+hold off
+title('P(target) / (P(target)+P(Alt)) (Conditional)')
+set(gca,'xticklabel',{'Single Decoy','Double Decoy'})
+%% 
+means = [DecoyModelFree.single_prop(1),DecoyModelFree.double_prop(1)]
+serr = [DecoyModelFree.single_prop_se ,DecoyModelFree.double_prop_se ]
+bar(means)
+hold on
+errorbar(1:2,means,serr,'.')
+plot([0 3],[0.5 0.5])
+hold off
+title('P(target) / (P(target)+P(Alt))')
+set(gca,'xticklabel',{'Single Decoy','Double Decoy'})
+
+%% Load previous analysis
+OldAggreg = struct;
+listoldfiles = dir(['Analysis' filesep 'Aggreg' filesep 'AggDD-' Tag sprintf('-%.0fx%.0f-M%.0f-*',param.G,param.P,param.Msteps)]);
+dtnum_index = 0;
+if numel(listoldfiles) > 0
+    for f = 1:numel(listoldfiles)
+        if datenum(listoldfiles(f).date) > dtnum_index
+            OldAggreg = load([listoldfiles(f).folder filesep listoldfiles(f).name]);
+            dtnum_index = datenum(listoldfiles(f).date);
+        end
+    end
+end
 %% Estimation
 SubjData = cell(num_subj,1);
 SubjBF = ones(num_subj,1);

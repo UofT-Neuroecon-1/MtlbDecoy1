@@ -1,4 +1,4 @@
-function [ proba_choice ] = ProbaChoice( X, y,subj , model , particle, param )
+function [ proba_choice ] = ProbaChoice( X, subj , model , particle, param )
 % X: J x K matrix of choice set
 % model: the true model to use
 % (returns) proba_choice : Jx1 vector of choice probabilities
@@ -26,7 +26,7 @@ elseif strcmp(model,'PDNNew')
     %True params
     alpha = particle.theta(subj,1);
     sigma = particle.theta(subj,2);
-    omega = particle.theta(subj,3:3+K-1);
+    Omega = particle.theta(subj,3:3+K-1);
     %utility computation
     u_x = X.^alpha;
     v = zeros(J,1);
@@ -34,7 +34,7 @@ elseif strcmp(model,'PDNNew')
     for j=1:J
         u_y = u_x;
         u_y(j,:)=[];
-        norm_coefs = sum(1 ./ (sigma + omega .* (u_x(j,:) + u_y)),1);%./(J-1);
+        norm_coefs = sum(1 ./ (sigma + Omega .* (u_x(j,:) + u_y)),1);%./(J-1);
         v(j) = norm_coefs * unnorm_u(:,j); 
     end
     v = v - max(v); %avoid overflow
@@ -42,6 +42,7 @@ elseif strcmp(model,'PDNNew')
     proba_choice = exp(v)./sum_exp_v;
     %mixture 99.9% model and 0.1% unif
     proba_choice = 0.99 .* proba_choice + 0.01/J;
+<<<<<<< HEAD
  elseif strcmp(model,'PDNProbit')
     %True params
     alpha = particle.theta(subj,1);
@@ -92,6 +93,8 @@ elseif strcmp(model,'range')
         
         denom=@(x) (sigma + omega*(max(x)-min(x)));
     
+=======
+>>>>>>> origin/master
 elseif strcmp(model,'RemiStand')
     %True params
     alpha = particle.theta(subj,1);
@@ -114,7 +117,7 @@ elseif strcmp(model,'HierarchicalProbit')
     alpha = particle.theta(subj,1);
     sigma = particle.theta(subj,2);
     Beta = (param.attrSign)';
-    omega = particle.theta(subj,3:3+K-1);
+    Omega = particle.theta(subj,3:3+K-1);
     %utility computation
     u_x = X.^alpha;
     v = zeros(J,1);
@@ -122,7 +125,7 @@ elseif strcmp(model,'HierarchicalProbit')
     for j=1:J
         u_y = u_x;
         u_y(j,:)=[];
-        norm_coefs = sum(1 ./ (sigma + omega .* (u_x(j,:) + u_y) ),1);%./(J-1);
+        norm_coefs = sum(1 ./ (sigma + Omega .* (u_x(j,:) + u_y) ),1);%./(J-1);
         v(j) = norm_coefs * unnorm_u(:,j); 
     end
     v = v - max(v); %avoid overflow
@@ -141,6 +144,7 @@ else
     error('ProbaChoice : unknown model');
 end
 
+<<<<<<< HEAD
 function Pi=calcPiInd(Mi,v,J)
 
        T=size(v,2);
@@ -167,5 +171,7 @@ function Pi=calcPiInd(Mi,v,J)
 end
 
 
+=======
+>>>>>>> origin/master
 end
 

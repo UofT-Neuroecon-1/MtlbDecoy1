@@ -42,6 +42,10 @@ if nargin > 2
    end
 end
 clear BackupData
+%% Check if ress threshold provided
+if isfield(param,'ress_threshold')
+    param.ress_threshold = 0.8;
+end
 %% Run SMC
 for subj = start_subj:param.num_subj
     fprintf('Begin Subject %d\n',subj)

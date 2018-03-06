@@ -20,7 +20,7 @@ for m=1:M
     ChoiceSet = SubjData{subj}.Xs{obs};
     choice = SubjData{subj}.ChoiceList(obs);
     for g = 1:param.G
-        parfor p = 1:param.P
+        for p = 1:param.P
             proba_choice = ProbaChoice( ChoiceSet, subj, model , Particles{m}.particle{g,p}, param );
             weights(g,p) = weights(g,p) * proba_choice(choice);
         end
@@ -36,7 +36,7 @@ for m=1:M
     fprintf('End C: Model %d ; RESS = %.5f ; %d - %d subject avg logML = %.5f\n',m,ress,subj,obs,mean(Particles{m}.log_marg_like(subj,:)) );
     
     %% S Phase : Importance Resampling, within particle groups
-    if ~param.Adaptive || ress < 0.6 || obs == numel(SubjData{subj}.ChoiceList) || obs < 5
+    if ~param.Adaptive || ress < param.ress_threshold || obs == numel(SubjData{subj}.ChoiceList) || obs < 5
         for g=1:param.G
             %Resample if weights are not all the same
             if length(unique(weights(g,:))) > 1
@@ -57,7 +57,7 @@ for m=1:M
     end
     
     %% M phase
-    if ~param.Adaptive || ress < 0.6 || obs == numel(SubjData{subj}.ChoiceList) || obs < 5
+    if ~param.Adaptive || ress < param.ress_threshold || obs == numel(SubjData{subj}.ChoiceList) || obs < 5
         accept_count = zeros(param.G,param.P);
         for g = 1:param.G
             % Get the Cholesky decomposition of the Covariance matrix for each

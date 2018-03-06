@@ -26,7 +26,6 @@ elseif strcmp(model,'PDNNew')
     %True params
     alpha = particle.theta(subj,1);
     sigma = particle.theta(subj,2);
-    Beta = (param.attrSign)';
     Omega = particle.theta(subj,3:3+K-1);
     %utility computation
     u_x = X.^alpha;

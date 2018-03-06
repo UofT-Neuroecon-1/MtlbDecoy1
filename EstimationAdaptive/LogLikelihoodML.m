@@ -1,9 +1,10 @@
-function [ logLik ] = LogLikelihood( Xs, ChoiceList, subj , model , particle, param )
+function [ logLik ] = LogLikelihoodML( Xs, ChoiceList, subj , model , theta, param )
 %LIKELIHOOD Summary of this function goes here
 %   Detailed explanation goes here
+particle = struct;
+particle.theta=theta;
 logLik = 0;
 T = numel(Xs);
-
 proba_c = @(X) ProbaChoice( X, subj , model , particle, param );
 probas = cellfun(proba_c,Xs,'UniformOutput',0);
 for t = 1:T

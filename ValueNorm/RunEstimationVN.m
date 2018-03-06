@@ -2,11 +2,11 @@
 % Estimation / Model-comparison Example File %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear
-
+addpath(['..' filesep 'EstimationAdaptive' filesep])
 %% Load Backup
 % if you want to load a backup from a previous estimation (set to [] if
 % not)
-backup_file = 'backup1.mat';
+backup_file = [];'backup1.mat';
 %% Estimation Parameters
 % You can create your own parameters that will be passed to the likelihood
 % function and the particles initialization functions
@@ -105,7 +105,7 @@ save ExampleData 'SubjData' 'par'
 load ExampleData
 
 %% Estimation
-EstimationOutput = EstimationAdaptiveSMC( SubjData, param, backup_file)
+EstimationOutput = EstimationAdaptiveSMC( SubjData, param, backup_file);
 Particles = EstimationOutput.Particles;
 %%
 if strcmp(param.Models{1},'PDNNew')

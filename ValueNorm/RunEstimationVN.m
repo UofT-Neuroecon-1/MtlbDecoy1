@@ -2,13 +2,17 @@
 % Estimation / Model-comparison Example File %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear
+<<<<<<< HEAD
 
 
 addpath ../EstimationAdaptive
+=======
+addpath(['..' filesep 'EstimationAdaptive' filesep])
+>>>>>>> origin/master
 %% Load Backup
 % if you want to load a backup from a previous estimation (set to [] if
 % not)
-backup_file = 'backup1.mat';
+backup_file = [];'backup1.mat';
 %% Estimation Parameters
 % You can create your own parameters that will be passed to the likelihood
 % function and the particles initialization functions
@@ -107,6 +111,7 @@ save ExampleData 'SubjData' 'par'
 load ExampleData
 
 %% Estimation
+<<<<<<< HEAD
 %use adaptive algorthm
 % EstimationOutput = EstimationAdaptiveSMC( SubjData, param, backup_file)
 % Particles = EstimationOutput.Particles;
@@ -116,6 +121,16 @@ load ExampleData
 %     fprintf('Posterior Mean (Across Subjects) \n')
 %     fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
 % end
+=======
+EstimationOutput = EstimationAdaptiveSMC( SubjData, param, backup_file);
+Particles = EstimationOutput.Particles;
+%%
+if strcmp(param.Models{1},'PDNNew')
+    EstimationOutput.Particles{1}.postmeans
+    fprintf('Posterior Mean (Across Subjects) \n')
+    fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
+end
+>>>>>>> origin/master
 
 % % Full posterior (all the subjects superposed)
 % prior = [betarnd(3,1,10000,1) gamrnd(1,0.5,10000,1) gamrnd(1,1,10000,1)];

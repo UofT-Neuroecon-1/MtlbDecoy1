@@ -3,20 +3,21 @@ function [ logLik ] = LogLikelihood( Xs, ChoiceList, subj , model , theta, param
 %   Detailed explanation goes here
 logLik = 0;
 T = numel(Xs);
+Jt=cellfun(@length,Xs);
 
 particle.theta=theta;
 
-temp=eye(J-1); 
-for i=1:J
-    M{i}=[temp(:,1:i-1) -1*ones(J-1,1) temp(:,i:J-1)];
-end
 for t=1:T
-   Mi{t}=M{y(t)}(1:Jt(t)-1,1:Jt(t)); 
+    temp=eye(Jt(t)-1); 
+    for i=1:Jt(t)
+        M{i}=[temp(:,1:i-1) -1*ones(Jt(t)-1,1) temp(:,i:Jt(t)-1)];
+    end 
+    Mi{t}=M{ChoiceList(t)}(1:Jt(t)-1,1:Jt(t)); 
 end
 
 %Vectorized Version
-P= ProbaChoice( Xs, Mi{t}, subj , model , particle, param );
-logLik = sum(log(P))
+P= ProbaChoice( Xs, Mi, subj , model , particle, param );
+logLik = sum(log(P));
 
 % %CellfunVersion
 % proba_c = @(X) ProbaChoice( X, subj , model , particle, param );

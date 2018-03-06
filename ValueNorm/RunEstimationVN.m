@@ -2,13 +2,9 @@
 % Estimation / Model-comparison Example File %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear
-<<<<<<< HEAD
 
-
-addpath ../EstimationAdaptive
-=======
 addpath(['..' filesep 'EstimationAdaptive' filesep])
->>>>>>> origin/master
+
 %% Load Backup
 % if you want to load a backup from a previous estimation (set to [] if
 % not)
@@ -111,7 +107,6 @@ save ExampleData 'SubjData' 'par'
 load ExampleData
 
 %% Estimation
-<<<<<<< HEAD
 %use adaptive algorthm
 % EstimationOutput = EstimationAdaptiveSMC( SubjData, param, backup_file)
 % Particles = EstimationOutput.Particles;
@@ -121,16 +116,7 @@ load ExampleData
 %     fprintf('Posterior Mean (Across Subjects) \n')
 %     fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
 % end
-=======
-EstimationOutput = EstimationAdaptiveSMC( SubjData, param, backup_file);
-Particles = EstimationOutput.Particles;
-%%
-if strcmp(param.Models{1},'PDNNew')
-    EstimationOutput.Particles{1}.postmeans
-    fprintf('Posterior Mean (Across Subjects) \n')
-    fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
-end
->>>>>>> origin/master
+
 
 % % Full posterior (all the subjects superposed)
 % prior = [betarnd(3,1,10000,1) gamrnd(1,0.5,10000,1) gamrnd(1,1,10000,1)];
@@ -171,18 +157,18 @@ for subj=1:numel(SubjData)
 end
 theta0 = [1,0,1];
 options = optimoptions('fminunc','OptimalityTolerance',1.0e-9,'Display','iter-detailed');
-Target = @(theta) -LogLikelihood( PooledXs, PooledChoiceList, 1 , 'PDNProbit' , theta, param );
+Target = @(theta) -LogLikelihood( PooledXs, PooledChoiceList, 1 , 'DNv' , theta, param );
 theta_pooled = fminunc(Target,theta0,options)
 
 %% Plot Likelihoods conditional on true values
-true_theta = [1,0,0.5]
+true_theta = [par.a,par.sigma,par.omega]
 gridpoints = linspace(0,3);
 yy = nan(numel(gridpoints),3);
 for th = 1:3
     theta = true_theta;
     for i = 1:numel(gridpoints)
         theta(th) = gridpoints(i);
-        yy(i,th) = LogLikelihood( PooledXs, PooledChoiceList, 1 , 'PDNNew' , theta, param );
+        yy(i,th) = LogLikelihood( PooledXs, PooledChoiceList, 1 , 'DNv' , theta, param );
     end
     subplot(3,1,th);
     plot(gridpoints,yy(:,th));

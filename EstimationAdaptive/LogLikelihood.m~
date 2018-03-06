@@ -10,7 +10,8 @@ particle.theta=theta;
 % end
 
    P= ProbaChoice( Xs{t}, ChoiceList(t), subj , model , particle, param );
-   logLik = sum(log(P))
+   logLik = logLik + log(proba_choice(ChoiceList(t))); %this selects the prob for the choice only, so why calculate all of them?
+
 
 end
 

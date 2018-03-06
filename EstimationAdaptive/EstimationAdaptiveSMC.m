@@ -43,7 +43,7 @@ if nargin > 2
 end
 clear BackupData
 %% Check if ress threshold provided
-if isfield(param,'ress_threshold')
+if ~isfield(param,'ress_threshold')
     param.ress_threshold = 0.8;
 end
 %% Run SMC

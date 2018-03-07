@@ -44,11 +44,11 @@ for m=1:M
                 % Make a copy of the drawn particles
                 temp_Particles = cell(1,param.P);
                 for p=1:param.P
-                   NewTheta{1,p}=Particles{m}.particle{g,resample(p)};
+                   temp_Particles{1,p}=Particles{m}.particle{g,resample(p)};
                 end
                 % Copy back the drawn particle to the correct position
                 for p=1:param.P
-                   Particles{m}.particle{g,p} = NewTheta{1,p};
+                   Particles{m}.particle{g,p} = temp_Particles{1,p};
                 end
             end
         end

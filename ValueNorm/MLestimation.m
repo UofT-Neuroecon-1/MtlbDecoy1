@@ -244,7 +244,7 @@ end
     out.LB=LB;
     out.UB=UB;
     out.model=model;
-    out.P=opts.P;
+    out.Prob=opts.Prob;
         
     %%%%%% Nested Functions %%%%%%%   
     function [nLL, Pi]=LLfun(theta)

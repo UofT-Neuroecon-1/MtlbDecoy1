@@ -8,18 +8,17 @@ opts.num_subj = numel(data);
 M = numel(opts.Models);
 
 %% Pre-calculate Image Matrices for Chosen Alternative
-    Jm=max([data.J]);
-    temp=eye(Jm-1); 
-    for i=1:Jm
-        Image{i}=[temp(:,1:i-1) -1*ones(Jm-1,1) temp(:,i:Jm-1)];
+    temp=eye(J-1); 
+    for i=1:J
+        M{i}=[temp(:,1:i-1) -1*ones(J-1,1) temp(:,i:J-1)];
     end
     
-    for s=1:opts.num_subj
-        for t=1:length(data(s).X)
-           Mi{t}=Image{data(s).y(t)}(1:data(s).J(t)-1,1:data(s).J(t)); 
-        end  
-        data(s).Mi=Mi;  
-    end
+    for s=1:opts.num_subj;
+    for t=1:T
+       Mi{t}=M{data(s).y(t)}(1:Jt(t)-1,1:Jt(t)); 
+    end  
+   
+    data(s).Mi=Mi;  
 
 %% Initialize particles
 for m=1:M
@@ -65,7 +64,7 @@ for m=1:M
         fprintf('Begin Subject %d\n',subj)
         num_obs = numel(data(subj).y);
         for obs = 1:num_obs
-            Particles(m) = UpdateParticles( Particles(m), data, subj, obs,opts.Models{m}, opts); 
+            Particles(m) = UpdateParticles( Particles(m), data, subj, obs,opts.Models(m), opts); 
         end
         %% Save temporary file in case of crash
         save(['backup1-' opts.Tag  '.mat']);

@@ -1,15 +1,14 @@
-function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
+function [ Pi ] = ProbaChoice( data,subj, particle, model,opts )
     % data.X: J x K matrix of choice set
     % data.y: Tx1 of choices
     % model: the model to use
     % (returns) Pi : Jx1 vector of choice probabilities
-    %F: function handle for model
     
 
     J = data.J;
     K = data.K;
-    
-    F=eval(['@' modelF]);
+    F=eval(['@' model]); %Construct function handle for model
+
     P=eval(['@calcPi' opts.Prob]); %Construct function handle for probability function
         
 %       if opts.indep %%%%Gaussian Quadrature       
@@ -35,8 +34,8 @@ function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
 
     function Pi=Logit(X)
         %True params
-        alpha = particle.theta(1);
-        Beta = (opts.attrSign .* particle.theta(2:end))';
+        alpha = particle.theta(subj,1);
+        Beta = (opts.attrSign .* particle.theta(subj,2:end))';
         %utility computation
         u_x = X.^alpha;
         v = zeros(J,1);
@@ -51,9 +50,9 @@ function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
     end
     function Pi=PDNNew(X)
         %True params
-        alpha = particle.theta(1);
-        sigma = particle.theta(2);
-        omega = particle.theta(3:3+K-1);
+        alpha = particle.theta(subj,1);
+        sigma = particle.theta(subj,2);
+        omega = particle.theta(subj,3:3+K-1);
         %utility computation
         u_x = X.^alpha;
         v = zeros(J,1);
@@ -73,9 +72,9 @@ function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
 
     function Pi=PDNProbit(X)
         %True params
-        alpha = particle.theta(1);
-        sigma = particle.theta(2);
-        omega = particle.theta(3:3+K-1);
+        alpha = particle.theta(subj,1);
+        sigma = particle.theta(subj,2);
+        omega = particle.theta(subj,3:3+K-1);
         %utility computation
         u_x = X.^alpha;
         v = zeros(J,1);
@@ -95,10 +94,10 @@ function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
     function Pi=DN(X)
         %True params
 
-        s = particle.theta(2);
-        w = particle.theta(3);
-        a = particle.theta(4);
-        b = particle.theta(5);
+        s = particle.theta(subj,2);
+        w = particle.theta(subj,3);
+        a = particle.theta(subj,4);
+        b = particle.theta(subj,5);
         
 %             kappa=par(1:Q);
 %             sigma=par(Q+1);
@@ -129,8 +128,8 @@ function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
 
     function Pi=RemiStand(X)
         %True params
-        alpha = particle.theta(1);
-        sigma =particle.theta(2);
+        alpha = particle.theta(subj,1);
+        sigma =particle.theta(subj,2);
         Beta = (opts.attrSign .* particle.theta(subj,3:3+K-1))';
         %utility computation
         x_mean = mean(X,1);
@@ -148,8 +147,8 @@ function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
     function Pi=HierarchicalProbit(X)
         % [alpha sigma Omega(1,K)]
         %True params
-        alpha = particle.theta(1);
-        sigma = particle.theta(2);
+        alpha = particle.theta(subj,1);
+        sigma = particle.theta(subj,2);
         Beta = (opts.attrSign)';
         omega = particle.theta(subj,3:3+K-1);
         %utility computation
@@ -172,14 +171,10 @@ function Pi=calcPiInd(Mi,v,J)
        T=size(v,2);
        
        if T==1 %one trial at a time
-           if isa(v,'cell')   
-               v = cell2mat(v);
-               Mi=cell2mat(Mi);
-           end
             vi=Mi*v;
             [x, w]=GaussHermite(100);
 
-
+         %   vi = cell2mat(viC);
             zz=bsxfun(@minus,-sqrt(2).*vi,repmat(-sqrt(2)*reshape(x,[1 100]), [J-1,1]));
             aa=prod(normcdf(zz),1);
             Pi=sum(bsxfun(@times,w',squeeze(aa)),2)./sqrt(pi);

@@ -1,7 +1,7 @@
 function [ logLik ] = LogLikelihood( Xs, ChoiceList, subj , model , theta, param )
 %LIKELIHOOD Summary of this function goes here
 %   Detailed explanation goes here
-logLik = 0;
+
 T = numel(Xs);
 Jt=cellfun(@length,Xs);
 

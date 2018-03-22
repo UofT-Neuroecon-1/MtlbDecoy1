@@ -102,7 +102,7 @@ elseif strcmp(model,'HierarchicalProbit')
             logPriorRatio = 2 * log (propTheta.theta(1)/particle.theta(subj,1)) ...
                 - (1+a_prime(1)) * log((q(2)+propTheta.theta(2)) / (q(2)+particle.theta(subj,2)))  ...
                 - sum( (1+a_prime(2)) * log((q(3:end)+propTheta.theta(3:end)) ./ (q(3:end)+particle.theta(subj,3:end)))  );
-            logLikProp = LogLikelihood( data(subj).X(1:obs), data(subj).y(1:obs), 1 , model , propTheta, param );
+            logLikProp = LogLikelihood( data(subj).Xs(1:obs), data(subj).y(1:obs), 1 , model , propTheta, param );
             %accept-reject
             if log(rand()) <= logPriorRatio + logLikProp - logLikTheta
                 accept=accept + 1/MSteps;

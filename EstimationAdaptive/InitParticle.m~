@@ -1,4 +1,4 @@
-function [ Particles] = InitParticle(Particles,m,J,opts)
+function [ Particles] = InitParticle( Particles , m,opts)
 %INITPARTICLE Returns a Theta particle drawn from prior
 % Get model info
 
@@ -35,6 +35,7 @@ for g=1:opts.G
     end
 end
 
-[Particles.model, Particles.LB, Particles.UB]=setRestrictions(model,J,opts);
-Particles.r0=Particles.LB(Particles.LB==Particles.UB);
+
+
+r0=LB(LB==UB);
 end

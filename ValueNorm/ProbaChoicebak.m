@@ -1,4 +1,4 @@
-function [ proba_choice ] = ProbaChoice( X, y,subj , model , particle, param )
+function [ proba_choice ] = ProbaChoice( X, subj , model , particle, param )
 % X: J x K matrix of choice set
 % model: the true model to use
 % (returns) proba_choice : Jx1 vector of choice probabilities
@@ -58,7 +58,7 @@ elseif strcmp(model,'PDNNew')
         v(j) = norm_coefs * unnorm_u(:,j); 
     end
     
-    temp=eye(J-1); 
+        temp=eye(J-1); 
     for i=1:J
         M{i}=[temp(:,1:i-1) -1*ones(J-1,1) temp(:,i:J-1)];
     end
@@ -69,12 +69,23 @@ elseif strcmp(model,'PDNNew')
     %mixture 99.9% model and 0.1% unif
     proba_choice(y) = 0.99 .* proba_choice(y) + 0.01/J;
 elseif strcmp(model,'DNv')
-    
-denom=@(x) (sigma + omega*norm(x,b) );
-sumv=cellfun(denom,V,'uniformoutput',false);
-                    
-f = @(x) (kappa*x.^a);
-Z=cellfun(@rdivide,cellfun(f,V,'uniformoutput',false),sumv,'uniformoutput',false);
+    %True params
+    J = size(X{1},1);
+    K = size(X{1},2);
+
+    alpha = particle.theta(subj,1);
+    sigma = particle.theta(subj,2);
+    omega = particle.theta(subj,3:3+K-1);
+
+    f = @(x) (x.^alpha);
+    denom=@(x) (sigma + omega*sum(x) );
+    sumv=cellfun(denom,X,'uniformoutput',false);
+    v=cellfun(@rdivide,cellfun(f,X,'uniformoutput',false),sumv,'uniformoutput',false);
+
+    proba_choice = calcPiInd(y,v,J); %y is Mi
+    %mixture 99.9% model and 0.1% unif
+    proba_choice = 0.99 .* proba_choice + 0.01/J;
+
 elseif strcmp(model,'range')
         
         denom=@(x) (sigma + omega*(max(x)-min(x)));
@@ -131,10 +142,11 @@ end
 function Pi=calcPiInd(Mi,v,J)
 
        T=size(v,2);
-       vi=Mi*v;
+
        
        if T==1
-        [x, w]=GaussHermite(100);
+            vi=Mi*v;
+            [x, w]=GaussHermite(100);
 
          %   vi = cell2mat(viC);
             zz2=bsxfun(@minus,-sqrt(2).*vi,repmat(-sqrt(2)*reshape(x,[1 100]), [J-1,1]));
@@ -142,12 +154,11 @@ function Pi=calcPiInd(Mi,v,J)
             Pi=sum(bsxfun(@times,w',squeeze(aa2)),2)./sqrt(pi);
        else
         
-       % viC = cellfun(@mtimes, Mi, v, 'UniformOutput', false); cell version
-        
-        
-        [x, w]=GaussHermite(100);
+            viC = cellfun(@mtimes, Mi, v, 'UniformOutput', false); %cell version
 
-         %   vi = cell2mat(viC);
+            [x, w]=GaussHermite(100);
+
+            vi = cell2mat(viC);
             zz2=bsxfun(@minus,-sqrt(2).*vi,repmat(-sqrt(2)*reshape(x,[1 1 100]), [J-1,T,1]));
             aa2=prod(normcdf(zz2),1);
             Pi=sum(bsxfun(@times,w',squeeze(aa2)),2)./sqrt(pi);

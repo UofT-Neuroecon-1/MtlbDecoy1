@@ -69,7 +69,7 @@ for subj = 1:num_subj
     bin_decoy_obs = ~isnan(sub_data.TargetAndAltX(:,1));
     DecoyOrAlt = sum(mean(sub_data.TargetAndAltX(bin_decoy_obs,:)== sub_data.ChoiceList(bin_decoy_obs,:)));
     median_rt = median(sub_data.timeRecords.answer-sub_data.timeRecords.show);
-    if Consistency(subj) > 0.3 && DecoyOrAlt > 0.7
+    if Consistency(subj) > 0.3 && DecoyOrAlt > 0.7 && median_rt > 2
         mediantime = [mediantime; median_rt];
         DecoyModelFree.NumDecoychoiceList = [DecoyModelFree.NumDecoychoiceList;sub_data.NumDecoychoice];
         for obs =1:numel(sub_data.ChoiceList)
@@ -122,6 +122,38 @@ plot(sorted_med_rtime,mean(ratio_ptarget_single_double) * ones(size(single_prop_
 xlabel('median rt')
 title({'P(T|S)/P(A|S) / P(T|D)/P(A|D)  per indiv (sorted by median RT)',sprintf("mean: %.4f , se: %.4f",mean_ratio,se_ratio)})
 hold off
+
+%% p values for P(Compet)
+list_proba =[DecoyModelFree.single_prop_subj(:,2)./sum(DecoyModelFree.single_prop_subj(:,1:2),2) ...
+    DecoyModelFree.double_prop_subj(:,2)./sum(DecoyModelFree.double_prop_subj(:,1:2),2)];
+fprintf("\n\nProportions of Comp Choice (absolute)\n");
+%% p values for P(Compet) | decoy effect
+list_proba =[DecoyModelFree.single_prop_subj(list_has_sdec,2)./sum(DecoyModelFree.single_prop_subj(list_has_sdec,1:2),2) ...
+    DecoyModelFree.double_prop_subj(list_has_sdec,2)./sum(DecoyModelFree.double_prop_subj(list_has_sdec,1:2),2)];
+fprintf("\n\nProportions of Comp Choice (condit)\n");
+%% Compute p-val
+N = size(list_proba,1);
+means = mean(list_proba);
+std_err = std(list_proba,[],1) / sqrt(N);
+tstat =  (means - 0.5)./ std_err;
+p_val = tcdf(tstat,size(single_prop_subj,1)-1);
+fprintf("n = %d\n",N);
+fprintf("\t p_single \t p_double \nmean: \t%.4f \t%.4f\n",means(1),means(2));
+fprintf("s.e.: \t%.4f \t%.4f\n",std_err(1),std_err(2));
+fprintf("t(%d): %.3f\t%.3f\n",N-1,tstat(1),tstat(2));
+fprintf("p-val: \t%.4f \t%.4f\n---\n",p_val(1),p_val(2));
+
+% paired diff
+diff_list = list_proba(:,1) - list_proba(:,2);
+mean_diff=mean(diff_list);
+sd_diff=std(diff_list);
+tstat= sqrt( N ) * mean_diff / sd_diff;
+p_val_diff = tcdf(tstat,N-1);
+fprintf("mean diff: \t\t%.5f\n",mean_diff)
+fprintf("s.e.(paired): \t%.5f\n",sd_diff/sqrt(size(single_prop_subj,1)))
+fprintf("t (paired): \t%.5f\n",tstat)
+fprintf("p (paired): \t%.5f\n",p_val_diff)
+
 
 %% p values (Absolute)
 tstat = ([DecoyModelFree.single_prop DecoyModelFree.double_prop]- 0.5)./ [DecoyModelFree.single_prop_se DecoyModelFree.double_prop_se];

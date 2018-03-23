@@ -1,4 +1,4 @@
-function [ particle , accept ] = Mutate(data, subj, obs, model, particle,chol_cov_theta, param)
+function [ particle , accept ] = Mutate(SubjData, subj, obs, model, particle,chol_cov_theta, param)
 %% define mvn random generator from cholesky decomposition
 theta_size = size(chol_cov_theta{subj},1);
 mvnrnd_chol = @(chol_cov_theta) (chol_cov_theta * randn(theta_size,1))';
@@ -12,7 +12,7 @@ end
 %% Mutate particle
 accept=0;
 if  strcmp(model,'Logit')
-    logLikTheta = LogLikelihood( data(subj).X(1:obs), data(subj).y(1:obs), subj , model , particle, param );
+    logLikTheta = LogLikelihood( SubjData{subj}.Xs(1:obs), SubjData{subj}.ChoiceList(1:obs), subj , model , particle, param );
     for m = 1 : MSteps
         % Prior: [betarnd(3,1) gamrnd(2,2,1,K)];
         %% joint resampling
@@ -23,7 +23,7 @@ if  strcmp(model,'Logit')
             logPriorRatio = 2 * log (propTheta.theta(1)/particle.theta(subj,1)) ...
                 + sum(particle.theta(subj,2:end) - propTheta.theta(2:end),2) / 2 ...
                 + sum(log(propTheta.theta(2:end)./particle.theta(subj,2:end)));
-            logLikProp = LogLikelihood( data(subj).X(1:obs), data(subj).y(1:obs), 1 , model , propTheta, param );
+            logLikProp = LogLikelihood( SubjData{subj}.Xs(1:obs), SubjData{subj}.ChoiceList(1:obs), 1 , model , propTheta, param );
             %accept-reject
             if log(rand()) <= logPriorRatio + logLikProp - logLikTheta
                 accept=accept + 1/MSteps;
@@ -35,7 +35,7 @@ if  strcmp(model,'Logit')
     
 elseif strcmp(model,'PDNNew') || strcmp(model,'RemiStand')
     % Prior: theta = [betarnd(3,1) gamrnd(1,0.5,1,1) gamrnd(1,1,1,K)];
-    logLikTheta = LogLikelihood( data(subj).X(1:obs), data(subj).y(1:obs), subj , model , particle, param );
+    logLikTheta = LogLikelihood( SubjData{subj}.Xs(1:obs), SubjData{subj}.ChoiceList(1:obs), subj , model , particle, param );
     for m = 1 : MSteps
         %% joint resampling
         propTheta = struct;
@@ -45,7 +45,7 @@ elseif strcmp(model,'PDNNew') || strcmp(model,'RemiStand')
             logPriorRatio = 2 * log (propTheta.theta(1)/particle.theta(subj,1)) ...
                 + (particle.theta(subj,2) - propTheta.theta(2))*2 ...
                 + sum(particle.theta(subj,3:end) - propTheta.theta(3:end),2);
-            logLikProp = LogLikelihood( data(subj).X(1:obs), data(subj).y(1:obs), 1 , model , propTheta, param );
+            logLikProp = LogLikelihood( SubjData{subj}.Xs(1:obs), SubjData{subj}.ChoiceList(1:obs), 1 , model , propTheta, param );
             %accept-reject
             if log(rand()) <= logPriorRatio + logLikProp - logLikTheta
                 accept=accept + 1/MSteps;
@@ -59,8 +59,8 @@ elseif strcmp(model,'HierarchicalProbit')
     %% If it is a new subject,update all previous subjects' parameter
     if obs == 1 && subj > 1
         for ss = 1:subj-1
-            num_obs = numel(data(ss).y);
-            logLikTheta = LogLikelihood( data(ss).X(1:num_obs), data(ss).y, ss , model , particle, param );
+            num_obs = numel(SubjData{ss}.ChoiceList);
+            logLikTheta = LogLikelihood( SubjData{ss}.Xs(1:num_obs), SubjData{ss}.ChoiceList, ss , model , particle, param );
             %Get sufficient statistics for other subject's parameters
             other_subj_list = (1:size(particle.theta,1))~=ss & (1:size(particle.theta,1)) <= subj;
             q = sum(particle.theta(other_subj_list,:),1);
@@ -87,7 +87,7 @@ elseif strcmp(model,'HierarchicalProbit')
         end
     end
     %% Update current subject's parameters
-    logLikTheta = LogLikelihood( data(subj).X(1:obs), data(subj).y(1:obs), subj , model , particle, param );
+    logLikTheta = LogLikelihood( SubjData{subj}.Xs(1:obs), SubjData{subj}.ChoiceList(1:obs), subj , model , particle, param );
     %Get sufficient statistics for other subject's parameters
     q = sum(particle.theta(1:subj-1,:),1);
     q(2) = q(2) + particle.hypertheta(2);
@@ -102,7 +102,7 @@ elseif strcmp(model,'HierarchicalProbit')
             logPriorRatio = 2 * log (propTheta.theta(1)/particle.theta(subj,1)) ...
                 - (1+a_prime(1)) * log((q(2)+propTheta.theta(2)) / (q(2)+particle.theta(subj,2)))  ...
                 - sum( (1+a_prime(2)) * log((q(3:end)+propTheta.theta(3:end)) ./ (q(3:end)+particle.theta(subj,3:end)))  );
-            logLikProp = LogLikelihood( data(subj).X(1:obs), data(subj).y(1:obs), 1 , model , propTheta, param );
+            logLikProp = LogLikelihood( SubjData{subj}.Xs(1:obs), SubjData{subj}.ChoiceList(1:obs), 1 , model , propTheta, param );
             %accept-reject
             if log(rand()) <= logPriorRatio + logLikProp - logLikTheta
                 accept=accept + 1/MSteps;

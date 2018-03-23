@@ -31,7 +31,7 @@ param.NormDraw = mvnrnd(zeros(4,1),eye(4),1000);
 param.attrVals = attrVals;
 param.attrSign = attrSign;
 param.attrMax = attrMax;
-Models = {'PDNNew';'RemiStandardized';'RemiStandardizedL'};%'RemiProbitStandardized'};
+Models = {'Logit';'RemiProbitStandardized'};%'RemiProbitStandardized'};
 Tag = 'NewVsStandMu2';
 
 %% Load files list

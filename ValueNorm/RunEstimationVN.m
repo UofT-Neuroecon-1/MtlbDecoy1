@@ -65,13 +65,13 @@ end
 
 
 %% Data format
-% Requires a cell array (e.g. SubjData{}) of size N x 1
-% Each cell must contain a structure with at least 2 fields:
-% SubjData{n}.Xs : cell array of T observations.
-% - SubjData{n}.Xs{t}: Matrix of J(t) options x K(t) attributes
-% SubjData{n}.ChoiceList : Vector of T x 1 Choices
+% Requires a struct array (e.g. data) of size N x 1
+% Each entry must contain a structure with at least 2 fields:
+% data(n).X : cell array of T observations.
+% - data(n).X{t}: Matrix of J(t) options x K(t) attributes
+% data(n).y : Vector of T x 1 Choices
 
-load ExampleDataSS
+load data/ExampleDataSS
 
 datapooled.X = {};
 datapooled.y = [];
@@ -85,14 +85,14 @@ for s=1:numel(data)
 end
  %% Estimation: use adaptive algorthm
 
-% EstimationOutput = EstimationAdaptiveSMC( data, opts, backup_file)
-% Particles = EstimationOutput.Particles;
-% 
-% if strcmp(param.Models{1},'PDNNew')
-%     EstimationOutput.Particles{1}.postmeans
-%     fprintf('Posterior Mean (Across Subjects) \n')
-%     fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
-% end
+EstimationOutput = EstimationAdaptiveSMC( data, opts, backup_file)
+Particles = EstimationOutput.Particles;
+
+if strcmp(param.Models{1},'PDNNew')
+    EstimationOutput.Particles{1}.postmeans
+    fprintf('Posterior Mean (Across Subjects) \n')
+    fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
+end
 
  %% Full posterior (all the subjects superposed)
 % prior = [betarnd(3,1,10000,1) gamrnd(1,0.5,10000,1) gamrnd(1,1,10000,1)];

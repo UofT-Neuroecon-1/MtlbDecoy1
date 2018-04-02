@@ -52,7 +52,9 @@ function out=MLestimation(data,par0,opts)
    
     data.Mi=Mi;   
 %% Set Restrictions 
-[modelF, LB, UB]=setRestrictions(model,Jt,opts);
+opts=setRestrictions(model,Jt,opts);
+LB=opts.LB;
+UB=opts.UB;
     
  %% Set starting values 
     if isempty(par0)
@@ -61,7 +63,6 @@ function out=MLestimation(data,par0,opts)
         par0=randn(1, length(W)*(J-1) +Q+ ((J-1)*J/2)-1);
     end
     theta0=par0(:,LB~=UB);
-    r0=LB(LB==UB);
 
     
 if opts.getP %just getting Choice Probs, call LL and exit now
@@ -192,9 +193,7 @@ end
 
 
     %matlabpool close
-    
-    par(LB~=UB)=thetah(i,:);
-    par(LB==UB)=r0;
+   
 
     %Get likelihood at estimates for Vuong test	
     [~,P]=opts.objfun(thetah(i,:));
@@ -212,7 +211,7 @@ end
     %     probs=pred(paramhat);
     % end;
     i0=opts.i0;      
-    save 'mpestimates.mat' 'par' 'data' 'grad' 'Q' 'J' 'i0'
+    save 'mpestimates.mat' 'data' 'grad' 'Q' 'J' 'i0'
 
     display('Estimates saved to disk');
     
@@ -249,16 +248,11 @@ end
     %%%%%% Nested Functions %%%%%%%   
     function [nLL, Pi]=LLfun(theta)
         
-        
-        par(LB==UB)=r0;%Set the restricted variables.
-        if any(LB~=UB)
-            par(LB~=UB)=theta;%Set the unrestricted variables to be those passed to the function.
-        end
+     
+        particle.theta=theta;
+        Pi=ProbaChoice(data, particle, opts );
 
-        particle.theta=par;
-        Pi=ProbaChoice(data, particle, modelF, opts );
-
-       nLL=-sum(log(Pi));
+        nLL=-sum(log(Pi));
     end
             
     function checkConvergence

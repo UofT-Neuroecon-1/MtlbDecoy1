@@ -86,27 +86,26 @@ for s=1:numel(data)
 end
  %% Estimation: use adaptive algorthm
 
-EstimationOutput = EstimationAdaptiveSMC( datapooled, opts, backup_file);
-Particles = EstimationOutput.Particles;
+% EstimationOutput = EstimationAdaptiveSMC( datapooled, opts, backup_file);
+% Particles = EstimationOutput.Particles;
+% 
+% if strcmp(opts.Models{1},'PDNNew')
+%     EstimationOutput.Particles{1}.postmeans
+%     fprintf('Posterior Mean (Across Subjects) \n')
+%     fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
+% end
 
-if strcmp(opts.Models{1},'PDNNew')
-    EstimationOutput.Particles{1}.postmeans
-    fprintf('Posterior Mean (Across Subjects) \n')
-    fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
-end
-
-%% vectorize
-sample_part = EstimationOutput.Particles(1).particle{1,1};
-vect_theta = zeros(opts.G,opts.P,size(sample_part.theta,1),size(sample_part.theta,2));
-for g=1:opts.G
-    for p=1:opts.P
-        vect_theta(g,p,:,:) = EstimationOutput.Particles(1).particle{g,p}.theta;
-    end
-end
-subplot(2,1,1);
-histogram(vect_theta(:,:,1,1),0:0.05:2)
-subplot(2,1,2);
-histogram(vect_theta(:,:,1,2),0:0.05:2)
+% sample_part = EstimationOutput.Particles(1).particle{1,1};
+% vect_theta = zeros(opts.G,opts.P,size(sample_part.theta,1),size(sample_part.theta,2));
+% for g=1:opts.G
+%     for p=1:opts.P
+%         vect_theta(g,p,:,:) = EstimationOutput.Particles(1).particle{g,p}.theta;
+%     end
+% end
+% subplot(2,1,1);
+% histogram(vect_theta(:,:,1,1),0:0.05:2)
+% subplot(2,1,2);
+% histogram(vect_theta(:,:,1,2),0:0.05:2)
  %% Full posterior (all the subjects superposed)
 % prior = [betarnd(3,1,10000,1) gamrnd(1,0.5,10000,1) gamrnd(1,1,10000,1)];
 % prior_mean = mean(prior,1);
@@ -146,12 +145,15 @@ histogram(vect_theta(:,:,1,2),0:0.05:2)
 % Target = @(theta) -LogLikelihood( PooledXs, PooledChoiceList, 1 , 'DN' , theta, opts );
 % 
 % theta_pooled = fminunc(Target,theta0,options)
-data_s1 = struct;
-data_s1.X = datapooled.X(1:270);
-data_s1.y = datapooled.y(1:270);
-data_s1.J = datapooled.J(1:270);
-data_s1.K = datapooled.K;
-MLEout = MLestimation(data_s1,[],opts);
+
+% data_s1 = struct;
+% data_s1.X = datapooled.X(1:270);
+% data_s1.y = datapooled.y(1:270);
+% data_s1.J = datapooled.J(1:270);
+% data_s1.K = datapooled.K;
+% MLEout = MLestimation(data_s1,[],opts);
+
+MLEout = MLestimation(datapooled,[],opts);
 
 %% Plot Likelihoods conditional on true values
 true_theta = [par.a,par.sigma,par.omega]

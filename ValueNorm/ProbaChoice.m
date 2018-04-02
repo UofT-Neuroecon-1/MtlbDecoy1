@@ -1,4 +1,4 @@
-function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
+function [ Pi ] = ProbaChoice( data, particle,opts )
     % data.X: J x K matrix of choice set
     % data.y: Tx1 of choices
     % model: the model to use
@@ -9,7 +9,7 @@ function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
     J = data.J;
     K = data.K;
     
-    F=eval(['@' modelF]);
+    F=eval(['@' opts.modelF]);
     P=eval(['@calcPi' opts.Prob]); %Construct function handle for probability function
         
 %       if opts.indep %%%%Gaussian Quadrature       
@@ -93,12 +93,18 @@ function [ Pi ] = ProbaChoice( data, particle, modelF,opts )
     end
 
     function Pi=DN(X)
-        %True params
+        
+        tic
+        par=opts.LB;
+        if any(opts.LB~=opts.UB)
+            par(opts.LB~=opts.UB)=particle.theta;%Set the unrestricted variables to be those passed to the function.
+        end
+        toc
 
-        s = particle.theta(2);
-        w = particle.theta(3);
-        a = particle.theta(4);
-        b = particle.theta(5);
+        s = par(2);
+        w = par(3);
+        a = par(4);
+        b = par(5);
         
 %             kappa=par(1:Q);
 %             sigma=par(Q+1);

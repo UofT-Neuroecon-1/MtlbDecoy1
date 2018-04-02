@@ -1,4 +1,4 @@
-function [modelOut,LB,UB]=setRestrictions(modelIn,J,opts)
+function opts=setRestrictions(modelIn,J,opts)
 
 %Take as argument the model to be estimated. This model can be a
 %restricted vesion of a more general model.
@@ -19,28 +19,28 @@ LB.w=0;UB.w=0;
 %kappa
 LB.a=1;UB.a=1;
 LB.b=1;UB.b=1;
-modelOut='DN'; %use this for estimation
+opts.modelF='DN'; %use this for estimation
 elseif strcmp(modelIn,'DN1')
 %omega
 LB.w=0;UB.w=inf;
 %kappa
 LB.a=1;UB.a=1;
 LB.b=1;UB.b=1;
-modelOut='DN'; %use this for estimation
+opts.modelF='DN'; %use this for estimation
 elseif strcmp(modelIn,'DN2')
 %omega
 LB.w=0;UB.w=inf;
 %kappa
 LB.a=1;UB.a=1;
 LB.b=0;UB.b=inf;
-modelOut='DN'; %use this for estimation
+opts.modelF='DN'; %use this for estimation
 elseif strcmp(modelIn,'Range')
 %omega
 LB.w=0;UB.w=inf;
 %kappa
 LB.a=1;UB.a=1;
 LB.b=1;UB.b=1;
-modelOut='Range'; %use this for estimation
+opts.modelF='Range'; %use this for estimation
 end
 
 
@@ -74,7 +74,13 @@ else
     E=rand(Jm-1,opts.R); %Draw    
 end
 
-LB=[LB.k LB.s LB.w LB.a LB.b LB.w2 LB.c];
-UB=[UB.k UB.s UB.w UB.a UB.b UB.w2 UB.c];
+if any(opts.Hier) %set scale hyperparameter(s) to be between 0 and inf. The mean or shape will be passed in the respective loation LB.par and UB.par
+    LB.Gamma=zeros(1,sum(opts.Hier));
+    UB.Gamma=inf(1,sum(opts.Hier));
+end
+
+
+opts.LB=[LB.k LB.s LB.w LB.a LB.b LB.w2 LB.c LB.Gamma];
+opts.UB=[UB.k UB.s UB.w UB.a UB.b UB.w2 UB.c UB.Gamma];
      
 end

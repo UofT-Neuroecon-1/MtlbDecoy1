@@ -24,7 +24,7 @@ M = numel(opts.Models);
 %% Initialize particles
 for m=1:M
     Particles(m).particle = cell(opts.G,opts.P);
-    Particles(m).weights = ones(opts.G,opts.P);
+    Particles(m).logweights = zeros(opts.G,opts.P);
     % Initialize output values
     Particles(m).log_marg_like = zeros(opts.num_subj,opts.G);
     Particles(m).log_marg_like_total = zeros(opts.G,1);
@@ -36,6 +36,11 @@ for m=1:M
     Particles(m).UB =0;
     Particles(m).r0 =0;
     Particles(m) = InitParticle(Particles(m),m,[data.J],opts); %Pass vector of choice set sizes, so that max can be determined.
+    for g = 1:opts.G
+        for p = 1:opts.P
+            Particles(m).particle{g,p}.log_like_subj = zeros(opts.num_subj,1);
+        end
+    end
 end
 
 %% check if backup file provided and restore data
@@ -46,7 +51,7 @@ if nargin > 2
        start_subj = BackupData.subj+1;
        Particles = BackupData.Particles;
        % check if subjects were added since backup
-       if BackupData.param.num_subj < opts.num_subj
+       if BackupData.opts.num_subj < opts.num_subj
            % Extend particles
            for m=1:M
                Particles(m).log_marg_like(opts.num_subj,1) = 0;
@@ -61,7 +66,7 @@ if ~isfield(opts,'ress_threshold')
 end
 %% Run SMC
 for m=1:M
-    for subj = start_subj:opts.num_subj
+    for subj = 1:1%start_subj:opts.num_subj
         fprintf('Begin Subject %d\n',subj)
         num_obs = numel(data(subj).y);
         for obs = 1:num_obs
@@ -101,7 +106,7 @@ EstimationOutput.param = opts;
 EstimationOutput.Particles = Particles;
 EstimationOutput.log_marg_like = log_marg_like;
 %%
-save(opts.savefile,'EstimationOutput','param');
+save(opts.savefile,'EstimationOutput','opts');
 
 end
 

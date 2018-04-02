@@ -9,7 +9,7 @@ K = param.K;
     if  strcmp(model,'Logit')
         particle.theta(subj,:) = [betarnd(3,1,1,1) gamrnd(1,1,1,K)];
     elseif strcmp(model,'DN1')
-        particle.theta(subj,:) = [betarnd(3,1,1,1) gamrnd(1,0.5,1,1)]; %check priors?
+        particle.theta(subj,:) = [gamrnd(1,1,1,2)]; %check priors?
     elseif strcmp(model,'PDNNew')
         particle.theta(subj,:) = [betarnd(3,1,1,1) gamrnd(1,0.5,1,1) gamrnd(1,1,1,K)];
     elseif strcmp(model,'RemiStand')

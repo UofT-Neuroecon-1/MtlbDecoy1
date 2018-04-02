@@ -14,11 +14,10 @@ function [ Particles ] = UpdateParticles( Particles, data, subj, obs, model,opts
     end
     %% C Phase
     % Reweight each particle to take into account new observation
-    weights = Particles.weights;
+    logweights = Particles.logweights;
     dataobs.X = data(subj).X(obs);
     dataobs.Mi = data(subj).Mi(obs);
-    [dataobs.J dataobs.K] = size(dataobs.X{1});
-    choice = data(subj).y(obs);
+    [dataobs.J, dataobs.K] = size(dataobs.X{1});
     
     par(Particles.LB==Particles.UB)=Particles.r0;%Set the restricted variables.
     index=Particles.LB~=Particles.UB;
@@ -30,27 +29,29 @@ function [ Particles ] = UpdateParticles( Particles, data, subj, obs, model,opts
             end
             particles.theta=par;
             proba_choice = ProbaChoice( dataobs,particles, Particles.model,opts );
-            weights(g,p) = weights(g,p) * proba_choice(choice);
+            logweights(g,p) = logweights(g,p) + log(proba_choice);
+            Particles.particle{g,p}.log_like_subj(subj) = Particles.particle{g,p}.log_like_subj(subj) + log(proba_choice);
         end
     end
     % Compute relative ESS
-    ress = sum(sum(weights))^2 / (opts.G*opts.P*sum(sum(weights.^2)));
+    ress = sum(sum(exp(logweights)))^2 / (opts.G*opts.P*sum(sum(exp(2*logweights))));
     
     % Save marginal likelihood for current observation
-    log_w_bar = log( sum(weights,2) ./ sum(Particles.weights,2) );%(param.G*param.P));
+    log_w_bar = log( sum(exp(logweights),2) ./ sum(exp(Particles.logweights),2) );%(param.G*param.P));
     Particles.log_marg_like(subj,:) = Particles.log_marg_like(subj,:) + log_w_bar';
     Particles.log_marg_like_total = Particles.log_marg_like_total + log_w_bar;
-    Particles.weights = weights;
-    fprintf('End C: Model %d ; RESS = %.5f ; %d - %d subject avg logML = %.5f\n',model,ress,subj,obs,mean(Particles.log_marg_like(subj,:)) );
+    Particles.logweights = logweights;
+    Particles.logweights = Particles.logweights - max(Particles.logweights,[],2);
+    fprintf('End C: Model %s ; RESS = %.5f ; %d - %d subject logML = %.5f\n',model,ress,subj,obs,mean(Particles.log_marg_like(subj,:)) );
     
     %% S Phase : Importance Resampling, within particle groups
     if ~opts.Adaptive || ress < opts.ress_threshold || obs == numel(data(subj).y) || obs < 5
         for g=1:opts.G
             %Resample if weights are not all the same
-            if length(unique(weights(g,:))) > 1
-                resample = drawidx(opts.P,weights(g,:));
+            if length(unique(logweights(g,:))) > 1
+                resample = drawidx(opts.P,exp(logweights(g,:)));
                 % Make a copy of the drawn particles
-                temp_Particles = cell(1,opts.P);
+                NewTheta = cell(1,opts.P);
                 for p=1:opts.P
                    NewTheta{1,p}=Particles.particle{g,resample(p)};
                 end
@@ -60,7 +61,7 @@ function [ Particles ] = UpdateParticles( Particles, data, subj, obs, model,opts
                 end
             end
         end
-        Particles.weights = ones(opts.G,opts.P);
+        Particles.logweights = zeros(opts.G,opts.P);
         clear temp_Particles;
     end
     
@@ -68,17 +69,22 @@ function [ Particles ] = UpdateParticles( Particles, data, subj, obs, model,opts
     if ~opts.Adaptive || ress < opts.ress_threshold || obs == numel(data(subj).y) || obs < 5
         accept_count = zeros(opts.G,opts.P);
         for g = 1:opts.G
+            algoVars.LB = Particles.LB;
+            algoVars.UB = Particles.UB;
+            algoVars.r0 = Particles.r0;
+            algoVars.model = Particles.model;
             % Get the Cholesky decomposition of the Covariance matrix for each
             % subject's parameters;
-            chol_cov_theta = CholCovTheta( Particles.particle(g,:), opts );
+            algoVars.chol_cov_theta = CholCovTheta( Particles.particle(g,:), opts );
+            
             % Copy particles for parallel looping
             temp_Particles = Particles.particle(g,:);
             parfor p = 1:opts.P
-                [temp_Particles{p},accept_count(g,p)] = Mutate(data, subj, obs, model, temp_Particles{p},chol_cov_theta,opts);
+                [temp_Particles{p},accept_count(g,p)] = Mutate(data, subj, obs, model, temp_Particles{p},algoVars,opts);
             end
             Particles.particle(g,:) = temp_Particles;
         end
-        fprintf('End M: Model %d ; accept. ratio = %.5f\n',m,mean(squeeze(sum(accept_count,2)) ./ opts.P));
+        fprintf('End M: Model %s ; accept. ratio = %.5f\n',model,mean(squeeze(sum(accept_count,2)) ./ opts.P));
     end
 end
 

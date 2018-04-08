@@ -4,7 +4,8 @@ function [ Pi ] = ProbaChoice( data,obs, model, particle,opts )
     % model: the model to use
     % (returns) Pi : Jx1 vector of choice probabilities
     %F: function handle for model
-    
+    Pi = prod(exp(- 4.*(particle.theta-3).^2 ));
+    return
 
     J = data.Js;
     K = data.Ks;

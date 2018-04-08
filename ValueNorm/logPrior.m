@@ -13,8 +13,8 @@ function [ logprior ] = logPrior( particle, HyperParams, model , param )
         end
         logprior.total = sum(logprior.beta) + logprior.r;
     elseif strcmp(model,'DN')
-        logprior.theta = zeros(1,numel(particle.theta));
-        for k = 1:numel(particle.theta)
+        logprior.theta = zeros(1,param.size_theta);
+        for k = 1:param.size_theta
             logprior.theta(k) = log(sum( ...
                 gampdf(particle.theta(k),HyperParams.ha_theta(particle.clust,k,:),1./HyperParams.hb_theta(particle.clust,k,:)) ...
                 ));

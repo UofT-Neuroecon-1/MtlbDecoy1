@@ -57,7 +57,7 @@ opts.attrMax = zeros(1,opts.K);
 for k=1:opts.K
     opts.attrMax(k) = max(opts.attrVals{k});
 end
-
+opts.size_theta = 2;
 clear k
 
 %Save format
@@ -79,7 +79,7 @@ end
 load data/ExampleDataSS
 
 SubjData = {};
-for s=1:numel(data)
+for s=1:2 %numel(data)
     SubjData{s}.Xs = data(s).X;
     SubjData{s}.Ys = data(s).y;
     SubjData{s}.Js = data(s).J;
@@ -88,26 +88,23 @@ end
 %% Estimation: use adaptive algorthm
 EstimationOutput = HBCSMC( SubjData, opts, backup_file );
 
-% EstimationOutput = EstimationAdaptiveSMC( datapooled, opts, backup_file);
-% Particles = EstimationOutput.Particles;
-% 
-% if strcmp(opts.Models{1},'PDNNew')
-%     EstimationOutput.Particles{1}.postmeans
-%     fprintf('Posterior Mean (Across Subjects) \n')
-%     fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
-% end
-
-% sample_part = EstimationOutput.Particles(1).particle{1,1};
-% vect_theta = zeros(opts.G,opts.P,size(sample_part.theta,1),size(sample_part.theta,2));
-% for g=1:opts.G
-%     for p=1:opts.P
-%         vect_theta(g,p,:,:) = EstimationOutput.Particles(1).particle{g,p}.theta;
-%     end
-% end
-% subplot(2,1,1);
-% histogram(vect_theta(:,:,1,1),0:0.05:2)
-% subplot(2,1,2);
-% histogram(vect_theta(:,:,1,2),0:0.05:2)
+%% Vectorize param
+param = EstimationOutput.param;
+N = numel(EstimationOutput.Particles{1}.particle{1,1}.theta);
+vect_theta = nan(N,param.size_theta,param.G,param.P);
+for g = 1:param.G
+    for p = 1:param.P
+        for ss = 1:N
+            vect_theta(ss,:,g,p)=EstimationOutput.Particles{1}.particle{g,p}.theta(ss).theta;
+        end
+    end
+end
+%% theta plot
+for k=1:param.size_theta
+    subplot(1,param.size_theta,k);
+    histogram(vect_theta(:,k,:,:),0:0.05:5)
+    title('theta');
+end
  %% Full posterior (all the subjects superposed)
 % prior = [betarnd(3,1,10000,1) gamrnd(1,0.5,10000,1) gamrnd(1,1,10000,1)];
 % prior_mean = mean(prior,1);

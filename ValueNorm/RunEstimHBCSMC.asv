@@ -22,7 +22,7 @@ backup_file = ''; 'backup1-StndPDN.mat';
 % InitParticle : Returns a draw from prior for one particle
 % Mutate : The Metropolis-Hastings Mutation step
 % ProbaChoice : The likelihood of one observation given a model and particle
-opts.Models = {'DN1'};
+opts.Models = {'DN'};
 opts.Prob='Ind'; %'GHK', 'HP' Is the covariance matrix restricted to be independent?
 opts.names={'kappa','G0','omega','a','b','w2'};
 opts.i0=3; %normalize w.r.t. altnerative...
@@ -37,6 +37,7 @@ opts.P = 128; % Number of particles per group
 opts.Adaptive = true; % Use the adaptive SMC (see Durham, Geweke 2014).
 opts.Msteps = 10; % Number of mutate steps
 opts.ress_threshold = 0.8;
+opts.num_clust = 2;
 
 %for ML
 opts.getP=0; %Set this to 1 if you just want to evaluate at initial parameter vector
@@ -56,11 +57,12 @@ opts.attrMax = zeros(1,opts.K);
 for k=1:opts.K
     opts.attrMax(k) = max(opts.attrVals{k});
 end
-
+opts.size_theta = 2;
 clear k
 
 %Save format
-opts.Tag = 'StndPDN'; % This tag will be added to the output file
+opts.Tag = 'RyanPDN'; % This tag will be added to the output file
+opts.basepath = 'D:\Data\Lab_Analysis\Out';
 opts.savefile = ['Analysis' filesep opts.Tag sprintf('-%.0fx%.0f-M%.0f-',opts.G,opts.P,opts.Msteps) datestr(datetime('now'),'yyyy-mm-dd-HH.MM') '.mat'];
 if ~exist('Analysis','dir')
     mkdir('Analysis')
@@ -76,38 +78,39 @@ end
 
 load data/ExampleDataSS
 
-datapooled.X = {};
-datapooled.y = [];
-datapooled.J = [];
-datapooled.K = [];
-for s=1:numel(data)
-    datapooled.X = [datapooled.X,data(s).X];
-    datapooled.y = [datapooled.y;data(s).y];
-    datapooled.J = [datapooled.J;data(s).J'];
-    datapooled.K = [datapooled.K;data(s).K'];
+SubjData = {};
+for s=1:2 %numel(data)
+    SubjData{s}.Xs = data(s).X;
+    SubjData{s}.Ys = data(s).y;
+    SubjData{s}.Js = data(s).J;
+    SubjData{s}.Ks = data(s).K;
 end
- %% Estimation: use adaptive algorthm
+%% Estimation: use adaptive algorthm
+EstimationOutput = HBCSMC( SubjData, opts, backup_file );
 
-% EstimationOutput = EstimationAdaptiveSMC( datapooled, opts, backup_file);
-% Particles = EstimationOutput.Particles;
-% 
-% if strcmp(opts.Models{1},'PDNNew')
-%     EstimationOutput.Particles{1}.postmeans
-%     fprintf('Posterior Mean (Across Subjects) \n')
-%     fprintf('alpha: %f \n sigma: %f \n omega: %f \n',mean(EstimationOutput.Particles{1}.postmeans))
-% end
-
-% sample_part = EstimationOutput.Particles(1).particle{1,1};
-% vect_theta = zeros(opts.G,opts.P,size(sample_part.theta,1),size(sample_part.theta,2));
-% for g=1:opts.G
-%     for p=1:opts.P
-%         vect_theta(g,p,:,:) = EstimationOutput.Particles(1).particle{g,p}.theta;
-%     end
-% end
-% subplot(2,1,1);
-% histogram(vect_theta(:,:,1,1),0:0.05:2)
-% subplot(2,1,2);
-% histogram(vect_theta(:,:,1,2),0:0.05:2)
+%% Vectorize param
+param = EstimationOutput.param;
+N = numel(EstimationOutput.Particles{1}.particle{1,1}.theta);
+vect_theta = nan(N,param.size_theta,param.G,param.P);
+for g = 1:param.G
+    for p = 1:param.P
+        for ss = 1:N
+            vect_theta(ss,:,g,p)=EstimationOutput.Particles{1}.particle{g,p}.theta(ss).theta;
+        end
+    end
+end
+%% theta plot
+for k=1:param.K
+    subplot(3,param.K,k);
+    histogram(vect_omega(:,k,:,:),0:0.5:15)
+    title([attrNames{k} 'omega']);
+    subplot(3,param.K,param.K+k);
+    histogram(vect_sig(:,k,:,:),0:0.5:15)
+    title('beta');
+    subplot(3,param.K,2*param.K+k);
+    histogram(vect_sig(:,k,:,:)./vect_omega(:,k,:,:),0:0.25:10)
+    title('beta/omega');
+end
  %% Full posterior (all the subjects superposed)
 % prior = [betarnd(3,1,10000,1) gamrnd(1,0.5,10000,1) gamrnd(1,1,10000,1)];
 % prior_mean = mean(prior,1);

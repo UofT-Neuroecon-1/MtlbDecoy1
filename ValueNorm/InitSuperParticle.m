@@ -91,8 +91,8 @@ particle = struct;
             particle.theta(subj).logprior = 0;
         end
     elseif strcmp(model,'DN')
-        particle.ha_theta = nan(param.num_clust,2);
-        particle.hb_theta = gamrnd(2,1,param.num_clust,2);
+        particle.ha_theta = nan(param.num_clust,param.size_theta);
+        particle.hb_theta = gamrnd(2,1,param.num_clust,param.size_theta);
         % Sample ha_omega via importance resampling
         % Hyperparam: a=0.1, b=2, c=2
         % Sample ha_theta via importance resampling
@@ -109,7 +109,7 @@ particle = struct;
         particle.theta = struct;
         for subj = 1:N
             particle.theta(subj).clust = nan(1,param.num_clust);
-            particle.theta(subj).theta = nan(1,K);
+            particle.theta(subj).theta = nan(1,param.size_theta);
         end
     else
         error(sprintf('InitParticle: unknown model used (%s)',model));

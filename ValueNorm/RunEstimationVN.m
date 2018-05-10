@@ -20,10 +20,11 @@ backup_file = ''; 'backup1-StndPDN.mat';
 % InitParticle : Returns a draw from prior for one particle
 % Mutate : The Metropolis-Hastings Mutation step
 % ProbaChoice : The likelihood of one observation given a model and particle
-opts.Models = {'DN1'}%{'PDNNew'}; %{'PDNNew'}; %{'RemiStand';'HierarchicalProbit'};
+opts.Models = {'DNw2'}%{'PDNNew'}; %{'PDNNew'}; %{'RemiStand';'HierarchicalProbit'};
 opts.Prob='Ind'; %'GHK', 'HP' Is the covariance matrix restricted to be independent?
 opts.names={'kappa','G0','omega','a','b','w2'};
 opts.i0=3; %normalize w.r.t. altnerative...
+opts.Hier=[0 0 0 0 0 0]; %which parameters to make hierarchical: kappa, sigma, omega, alpha, beta;
 
 % opts.Sinz=0;
 % opts.weights=0;
@@ -72,17 +73,25 @@ end
 % - data(n).X{t}: Matrix of J(t) options x K(t) attributes
 % data(n).y : Vector of T x 1 Choices
 
-load data/ExampleDataSS
+%load data/ExampleDataSS
+%load data/ExpDataSS
+load data/ExpData3
+
+
+opts.cluster=ones(30,1); %all in same cluster (i.e. pooled)
+%opts.cluster=1:30; % each in own cluster
 
 datapooled.X = {};
 datapooled.y = [];
 datapooled.J = [];
 datapooled.K = [];
+datapooled.cluster=[];
 for s=1:numel(data)
     datapooled.X = [datapooled.X,data(s).X];
     datapooled.y = [datapooled.y;data(s).y];
     datapooled.J = [datapooled.J;data(s).J'];
     datapooled.K = [datapooled.K;data(s).K'];
+    datapooled.cluster=[datapooled.cluster; s*ones(length(data(s).X),1)];
 end
  %% Estimation: use adaptive algorthm
 
@@ -155,6 +164,7 @@ end
 
 MLEout = MLestimation(datapooled,[],opts);
 
+save MLEout
 %% Plot Likelihoods conditional on true values
 true_theta = [par.a,par.sigma,par.omega]
 gridpoints = linspace(0,3);

@@ -35,22 +35,21 @@ function out=MLestimation(data,par0,opts)
    opts.objfun=@LLfun; 
 
  %% Choice set Properties
-   
-    T=size(data.X,2);
+
+    data.T=size(data.X,2);
     Jt=cellfun(@length,data.X,'uniformoutput',true);
     J=max(Jt);
-    Q=1;
+
     
 %% Pre-calculate Image Matrices for Chosen Alternative
     temp=eye(J-1); 
     for i=1:J
         M{i}=[temp(:,1:i-1) -1*ones(J-1,1) temp(:,i:J-1)];
     end
-    for t=1:T
-       Mi{t}=M{data.y(t)}(1:Jt(t)-1,1:Jt(t)); 
+    for t=1:data.T
+       data.Mi{t}=M{data.y(t)}(1:Jt(t)-1,1:Jt(t)); 
     end  
-   
-    data.Mi=Mi;   
+
 %% Set Restrictions 
 opts=setRestrictions(model,Jt,opts);
 LB=opts.LB;
@@ -60,9 +59,11 @@ UB=opts.UB;
     if isempty(par0)
         display('No Initial parameters specified, starting point is random');
 
-        par0=randn(1, length(W)*(J-1) +Q+ ((J-1)*J/2)-1);
+        theta0=randn(1, sum(LB~=UB));
+    else
+        theta0=par0(:,LB~=UB);
     end
-    theta0=par0(:,LB~=UB);
+    
 
     
 if opts.getP %just getting Choice Probs, call LL and exit now
@@ -72,7 +73,8 @@ end
    
  %% Start Estimation   
     disp('Start estimation');
-    fprintf('# of Observations: %d \n', length(data.y));
+    fprintf('# of Clusters: %d \n', max(opts.cluster));
+    fprintf('# of Observations per Cluster: %d \n', length(data.y));
     
     fprintf('Size of initial sample for starting values: %d \n',opts.numInit);
     tic;
@@ -211,7 +213,7 @@ end
     %     probs=pred(paramhat);
     % end;
     i0=opts.i0;      
-    save 'mpestimates.mat' 'data' 'grad' 'Q' 'J' 'i0'
+    save 'mpestimates.mat' 'data' 'grad' 'J' 'i0'
 
     display('Estimates saved to disk');
     
@@ -229,13 +231,15 @@ end
        ses=zeros(1,length(LB));
     end
     
-    save 'mpestimates.mat' 'par' 'data' 'H' 'grad' 'Q' 'J' 'ses' 'i0'
+    save 'mpestimates.mat' 'data' 'H' 'grad' 'J' 'ses' 'i0'
     
-
+   parh=LB; 
+   parh(LB~=UB)=thetah(i,:);
+   
     out.exitflag=exitflag;
     out.theta0=theta0;
     out.max=i;
-    out.parh=par;
+    out.parh=parh;
     out.LL=maxLL;
     out.P=P;
     out.se=ses;
@@ -247,11 +251,23 @@ end
         
     %%%%%% Nested Functions %%%%%%%   
     function [nLL, Pi]=LLfun(theta)
-        
-     
-        particle.theta=theta;
-        Pi=ProbaChoice(data, particle, opts );
+        R=1;
+        C=max(opts.cluster);
+        if any(opts.Hier)
+            R=100;
+            par=opts.LB(1:6);
+            par(opts.LB(1:6)~=opts.UB(1:6))=theta(1:end-sum(opts.Hier));
 
+            draws=gamrnd(par(opts.Hier==1),theta(end-sum(opts.Hier)+1:end),C,1,100);
+
+        end
+        
+% for c=1:C
+% for r=1:R
+        particle.theta=theta;
+         Pi=ProbaChoice(data, particle, opts );
+% end
+% end
         nLL=-sum(log(Pi));
     end
             

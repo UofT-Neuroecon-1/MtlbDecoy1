@@ -28,15 +28,15 @@ function [ Pi ] = ProbaChoice( data, particle,opts )
 %        end
 % 
     
-    Pi=F(data.X); %Get Probs
+    Pi=F(data.X,particle.theta); %Get Probs
  
     Pi(Pi==0)=realmin;  % make sure that the probability of a choice is not 0
     
 
-    function Pi=Logit(X)
+    function Pi=Logit(X,theta)
         %True params
-        alpha = particle.theta(1);
-        Beta = (opts.attrSign .* particle.theta(2:end))';
+        alpha = theta(1);
+        Beta = (opts.attrSign .* theta(2:end))';
         %utility computation
         u_x = X.^alpha;
         v = zeros(J,1);
@@ -49,11 +49,11 @@ function [ Pi ] = ProbaChoice( data, particle,opts )
         %mixture 99.9% model and 0.1% unif
         Pi = 0.99 .* Pi + 0.01/J;
     end
-    function Pi=PDNNew(X)
+    function Pi=PDNNew(X,theta)
         %True params
-        alpha = particle.theta(1);
-        sigma = particle.theta(2);
-        omega = particle.theta(3:3+K-1);
+        alpha = theta(1);
+        sigma = theta(2);
+        omega = theta(3:3+K-1);
         %utility computation
         u_x = X.^alpha;
         v = zeros(J,1);
@@ -71,11 +71,11 @@ function [ Pi ] = ProbaChoice( data, particle,opts )
         %proba_choice = 0.99 .* proba_choice + 0.01/J;
     end
 
-    function Pi=PDNProbit(X)
+    function Pi=PDNProbit(X,theta)
         %True params
-        alpha = particle.theta(1);
-        sigma = particle.theta(2);
-        omega = particle.theta(3:3+K-1);
+        alpha = theta(1);
+        sigma = theta(2);
+        omega = theta(3:3+K-1);
         %utility computation
         u_x = X.^alpha;
         v = zeros(J,1);
@@ -92,19 +92,18 @@ function [ Pi ] = ProbaChoice( data, particle,opts )
         %proba_choice(y) = 0.99 .* proba_choice(y) + 0.01/J;
     end
 
-    function Pi=DN(X)
+    function Pi=DN(X,theta)
         
-        tic
         par=opts.LB;
         if any(opts.LB~=opts.UB)
-            par(opts.LB~=opts.UB)=particle.theta;%Set the unrestricted variables to be those passed to the function.
+            par(opts.LB~=opts.UB)=theta;%Set the unrestricted variables to be those passed to the function.
         end
-        toc
 
         s = par(2);
-        w = par(3);
+        w = par(3); % all weights
         a = par(4);
         b = par(5);
+        w2= par(6); %additional own weight
         
 %             kappa=par(1:Q);
 %             sigma=par(Q+1);
@@ -119,7 +118,10 @@ function [ Pi ] = ProbaChoice( data, particle,opts )
 %             %c3 ... ... cend
 
         f = @(x) (x.^a);
-        denom=@(x) (s + w*sum(x) );
+        %denom=@(x) (s + w*sum(x) );
+        
+        denom=@(x) (s + (w + w2*eye(length(x)))* x );
+        
         %denom=@(x) (sigma + omega*norm(x,b) );
         %vecnorm(cell2mat(X)',2)
         sumv=cellfun(denom,X,'uniformoutput',false);
@@ -133,11 +135,11 @@ function [ Pi ] = ProbaChoice( data, particle,opts )
             denom=@(x) (sigma + omega*(max(x)-min(x)));
     end
 
-    function Pi=RemiStand(X)
+    function Pi=RemiStand(X,theta)
         %True params
-        alpha = particle.theta(1);
-        sigma =particle.theta(2);
-        Beta = (opts.attrSign .* particle.theta(subj,3:3+K-1))';
+        alpha =theta(1);
+        sigma =theta(2);
+        Beta = (opts.attrSign .* theta(subj,3:3+K-1))';
         %utility computation
         x_mean = mean(X,1);
         sd_x = std(X,[],1) * alpha + sigma;
@@ -151,13 +153,13 @@ function [ Pi ] = ProbaChoice( data, particle,opts )
         Pi = 0.99 .* Pi + 0.01/J;
     end
 
-    function Pi=HierarchicalProbit(X)
+    function Pi=HierarchicalProbit(X,theta)
         % [alpha sigma Omega(1,K)]
         %True params
-        alpha = particle.theta(1);
-        sigma = particle.theta(2);
+        alpha = theta(1);
+        sigma = theta(2);
         Beta = (opts.attrSign)';
-        omega = particle.theta(subj,3:3+K-1);
+        omega = theta(subj,3:3+K-1);
         %utility computation
         u_x = X.^alpha;
         v = zeros(J,1);

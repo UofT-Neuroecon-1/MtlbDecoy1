@@ -10,7 +10,6 @@ function opts=setRestrictions(modelIn,J,opts)
 Jm=max(J);
 
 LB.k=1;UB.k=1;
-LB.w2=0;UB.w2=0; 
 LB.s=0;UB.s=inf;
 
 if strcmp(modelIn,'MNP')
@@ -23,6 +22,7 @@ opts.modelF='DN'; %use this for estimation
 elseif strcmp(modelIn,'DN1')
 %omega
 LB.w=0;UB.w=inf;
+LB.w2=0;UB.w2=0; 
 %kappa
 LB.a=1;UB.a=1;
 LB.b=1;UB.b=1;
@@ -33,6 +33,14 @@ LB.w=0;UB.w=inf;
 %kappa
 LB.a=1;UB.a=1;
 LB.b=0;UB.b=inf;
+opts.modelF='DN'; %use this for estimation
+elseif strcmp(modelIn,'DNw2')
+%omega
+LB.w=0;UB.w=inf;
+%kappa
+LB.a=1;UB.a=1;
+LB.b=1;UB.b=1;
+LB.w2=0;UB.w2=inf; 
 opts.modelF='DN'; %use this for estimation
 elseif strcmp(modelIn,'Range')
 %omega
@@ -77,6 +85,9 @@ end
 if any(opts.Hier) %set scale hyperparameter(s) to be between 0 and inf. The mean or shape will be passed in the respective loation LB.par and UB.par
     LB.Gamma=zeros(1,sum(opts.Hier));
     UB.Gamma=inf(1,sum(opts.Hier));
+else
+    LB.Gamma=[];
+    UB.Gamma=[];
 end
 
 

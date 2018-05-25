@@ -30,6 +30,14 @@ for m = 1:numel(param.Models)
                             ));
                     end
                     logcondit.total = sum(logcondit.theta);
+                elseif strcmp(model,'DN3')
+                    logcondit.theta = zeros(1,param.size_theta);
+                    for k = 1:param.size_theta
+                        logcondit.theta(k) = log(gampdf( particle.theta(k), ...
+                            supParticle.h_theta(k,1,particle.clust),1./supParticle.h_theta(k,1,particle.clust) ...
+                            ));
+                    end
+                    logcondit.total = sum(logcondit.theta);
                 else
                     error('Assimilate : unknown model');
                 end

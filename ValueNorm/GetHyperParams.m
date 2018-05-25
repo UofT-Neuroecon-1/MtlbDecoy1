@@ -23,6 +23,12 @@ for g = 1:param.G
             VectHyperParams{g}.hb_theta(:,:,p) = Particles.particle{g,p}.hb_theta;
         end
         
+    elseif strcmp(model,'DN3')
+        VectHyperParams{g}.h_theta = nan(param.size_theta,2,param.num_clust,param.P);
+        for p = 1:param.P
+            VectHyperParams{g}.h_theta(:,:,:,p) = Particles.particle{g,p}.h_theta;
+        end
+        
     else
         error('GetHyperParams : unknown model');
     end

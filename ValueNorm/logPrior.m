@@ -16,7 +16,15 @@ function [ logprior ] = logPrior( particle, HyperParams, model , param )
         logprior.theta = zeros(1,param.size_theta);
         for k = 1:param.size_theta
             logprior.theta(k) = log(sum( ...
-                gampdf(particle.theta(k),HyperParams.ha_theta(particle.clust,k,:),1./HyperParams.hb_theta(particle.clust,k,:)) ...
+                gampdf(particle.theta(k,:),HyperParams.ha_theta(particle.clust,k,:),1./HyperParams.hb_theta(particle.clust,k,:)) ...
+                ));
+        end
+        logprior.total = sum(logprior.theta);
+    elseif strcmp(model,'DN3')
+        logprior.theta = zeros(1,param.size_theta);
+        for k = 1:param.size_theta
+            logprior.theta(k) = log(sum( ...
+                gampdf(particle.theta(k),HyperParams.h_theta(k,1,particle.clust,:),1./HyperParams.h_theta(k,2,particle.clust,:)) ...
                 ));
         end
         logprior.total = sum(logprior.theta);

@@ -135,6 +135,59 @@ elseif strcmp(model,'DN')
         end
         supParticle.theta(ss).log_like = logLikTheta;
     end
+elseif strcmp(model,'DN3')
+    %% Updade Hyperparams
+    clust_list = vertcat(supParticle.theta.clust)==1;
+    theta = vertcat(supParticle.theta.theta);
+    for c = 1:param.num_clust
+        same_clust = clust_list(:,c);
+        num_members = sum(same_clust(1:subj),1);
+        % Use MH to update hyper param
+        log_p_post = -0.6931471806 + sum(log(theta(same_clust(1:subj), : )),1)';
+        q_post = 1.5 + sum(theta(same_clust(1:subj), : ),1)';
+        r_post = 0.1 + num_members;
+        s_post = 0.4 + num_members;
+        
+        for m = 1:100
+            draw_step = gamrnd(100,0.01,param.size_theta,2);
+            prop_x = supParticle.h_theta(:,:,c) .* draw_step;
+            log_kernel_ratio = sum( -198 .* log(draw_step) + 100 .* (draw_step - 1./ draw_step) , 2);
+            log_target_ratio = log_p_post .* (prop_x(:,1) - supParticle.h_theta(:,1,c)) - (prop_x(:,2) - supParticle.h_theta(:,2,c)) .* q_post ...
+                + s_post .* (prop_x(:,1) .* log(prop_x(:,2)) -  supParticle.h_theta(:,1,c) .* log(supParticle.h_theta(:,2,c))  ) ...
+                - r_post .* (gammaln(prop_x(:,1))-gammaln(supParticle.h_theta(:,1,c) ));
+            bool_accept = log(rand(param.size_theta,1)) < (log_kernel_ratio + log_target_ratio);
+            supParticle.h_theta(bool_accept,:,c) = prop_x(bool_accept,:);
+        end
+    end
+    %% Updade params
+    % resample up to 5 subjects' param at random
+    mutate_subj = 1:subj;
+    if subj > 5
+        mutate_subj = randsample(subj,5);
+    end
+    for s = 1:numel(mutate_subj)
+        ss = mutate_subj(s);
+        logLikTheta = supParticle.theta(ss).log_like;
+        c = supParticle.theta(ss).clust;
+        for m = 1 : param.Msteps
+            %% joint resampling
+            propTheta = supParticle.theta(ss);
+            % theta proposal
+            step = gamrnd(100,0.01,1,param.size_theta);
+            propTheta.theta = propTheta.theta .* step;
+            logQRatio = sum(- 198 .* log(step) + 100 .* (step - 1./step));
+            logPriorRatio = sum( (supParticle.h_theta(:,1,c)-1)' .* log(propTheta.theta/supParticle.theta(ss).theta) ...
+                + supParticle.h_theta(:,2,c)' .* (supParticle.theta(ss).theta - propTheta.theta));
+            % Compute Likelihood Ratio
+            logLikProp = LogLikelihood( SubjData{ss}, numel(SubjData{ss}.Ys), model , propTheta, param );
+            %accept-reject
+            if log(rand()) <= logPriorRatio + logLikProp - logLikTheta + logQRatio
+                supParticle.theta(ss) = propTheta;
+                logLikTheta = logLikProp;
+            end
+        end
+        supParticle.theta(ss).log_like = logLikTheta;
+    end
 else
     error('UpdateSuperParticle : unknown model');
 end

@@ -55,6 +55,27 @@ elseif  strcmp(model,'DN')
         end
     end
     particle.log_like = logLikTheta;
+elseif  strcmp(model,'DN3')
+    logLikTheta = particle.log_like;
+    for m = 1 : MSteps
+        %% joint resampling
+        propTheta = particle;
+        % Theta proposal
+        step = gamrnd(100,0.01,1,param.size_theta);
+        propTheta.theta = propTheta.theta .* step;
+        logQRatio = sum(- 198 .* log(step) + 100 .* (step - 1./step));
+        % Compute Prior Ratio
+        propTheta.logprior = logPrior( propTheta, HyperParams, model, param );
+        logPriorRatio = propTheta.logprior.total - particle.logprior.total;
+        logLikProp = LogLikelihood( CurSubjData, obs, model , propTheta, param );
+        %accept-reject
+        if log(rand()) <= logPriorRatio + logLikProp - logLikTheta + logQRatio
+            accept=accept + 1/MSteps;
+            particle = propTheta;
+            logLikTheta = logLikProp;
+        end
+    end
+    particle.log_like = logLikTheta;
 else
     error('Mutate : unknown model');
 end

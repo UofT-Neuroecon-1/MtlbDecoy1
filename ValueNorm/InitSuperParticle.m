@@ -111,6 +111,45 @@ particle = struct;
             particle.theta(subj).clust = nan(1,param.num_clust);
             particle.theta(subj).theta = nan(1,param.size_theta);
         end
+    elseif strcmp(model,'DN3')
+        log_p = log(0.5);
+        q = 1.5;
+        r = 0.1;
+        s = 0.4;
+        n_draws = 1000;
+        particle.h_theta = nan(param.size_theta,2,param.num_clust);
+        for c = 1:param.num_clust
+            % Sample from prior via importance resampling + MH
+            draws = gamrnd(2,3,n_draws,2);     
+            %weighting draws
+            log_weights = (draws(:,1)-1) .* log_p - draws(:,2) .* q + (draws(:,1).*s) .* log(draws(:,2)) - r .* gammaln(draws(:,1));
+            log_weights = log_weights - max(log_weights);
+            weights = exp(log_weights) ./ sum(exp(log_weights));
+            weights = weights ./ prod(gampdf(draws,2,3),2);
+            % sampling
+            sample_idx = randsample(1:n_draws,param.size_theta,true,weights);
+            prior_sample = draws(sample_idx,:);
+            
+            % Metropolis Hastings step
+            for m = 1:100
+                draw_step = gamrnd(100,0.01,param.size_theta,2);
+                prop_x = particle.h_theta(:,:,c) .* draw_step;
+                log_kernel_ratio = sum( -198 .* log(draw_step) + 100 .* (draw_step - 1./ draw_step) , 2);
+                log_target_ratio = log_p .* (prop_x(:,1) - prior_sample(:,1)) - (prop_x(:,2) - prior_sample(:,2)) .* q ...
+                    + s .* (prop_x(:,1) .* log(prop_x(:,2)) -  prior_sample(:,1) .* log(prior_sample(:,2))  ) ...
+                    - r .* (gammaln(prop_x(:,1))-gammaln(prior_sample(:,1) ));
+                bool_accept = log(rand(param.size_theta,1)) < (log_kernel_ratio + log_target_ratio);
+                prior_sample(bool_accept,:) = prop_x(bool_accept,:);
+            end
+            particle.h_theta(:,:,c) = prior_sample;
+        end
+        
+        % Init subparticle container
+        particle.theta = struct;
+        for subj = 1:N
+            particle.theta(subj).clust = nan(1,param.num_clust);
+            particle.theta(subj).theta = nan(1,param.size_theta);
+        end
     else
         error(sprintf('InitParticle: unknown model used (%s)',model));
     end

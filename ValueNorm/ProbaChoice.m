@@ -4,7 +4,14 @@ function [ Pi ] = ProbaChoice( data,obs, model, particle,opts )
     % model: the model to use
     % (returns) Pi : Jx1 vector of choice probabilities
     %F: function handle for model
-    Pi = prod(exp(- 4.*(particle.theta-3).^2 ));
+    if strcmp(opts.Models,'DN')
+        exp_u = exp(data.Xs{obs} ./ (particle.theta(1) + particle.theta(2) .* sum(data.Xs{obs}))) ; 
+        Pi = exp_u(data.Ys(obs)) / sum(exp_u);
+    elseif strcmp(opts.Models,'DN3')
+        exp_u = exp(data.Xs{obs} ./ (particle.theta(1) + ...
+            particle.theta(2) .* sum( data.Xs{obs}.^particle.theta(3)).^(1/particle.theta(3)) )) ; 
+        Pi = exp_u(data.Ys(obs)) / sum(exp_u);
+    end
     return
 
     J = data.Js;
@@ -73,12 +80,13 @@ function [ Pi ] = ProbaChoice( data,obs, model, particle,opts )
 
     function Pi=DN(X)
         
-        tic
-        par=opts.LB;
-        if any(opts.LB~=opts.UB)
-            par(opts.LB~=opts.UB)=particle.theta;%Set the unrestricted variables to be those passed to the function.
-        end
-        toc
+%         tic
+%         par=opts.LB;
+%         if any(opts.LB~=opts.UB)
+%             par(opts.LB~=opts.UB)=particle.theta;%Set the unrestricted variables to be those passed to the function.
+%         end
+%         toc
+        par(1)=1;
 
         s = par(2);
         w = par(3);

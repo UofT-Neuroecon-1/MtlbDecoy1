@@ -6,7 +6,7 @@ clear
 % Note: Algorithm Avalaible at:
 % https://github.com/RemiDav/DiscreteChoiceSMC/tree/master/HBCSMCMatlab
 addpath('D:\Dropbox\Dev\DiscreteChoiceSMC\HBCSMCMatlab')
-addpath(['DERIVESTsuite' filesep])
+addpath(['..' filesep])
 
 %% Load Backup
 % if you want to load a backup from a previous estimation (set to [] if
@@ -22,7 +22,7 @@ backup_file = ''; 'backup1-StndPDN.mat';
 % InitParticle : Returns a draw from prior for one particle
 % Mutate : The Metropolis-Hastings Mutation step
 % ProbaChoice : The likelihood of one observation given a model and particle
-opts.Models = {'DN'};
+opts.Models = {'DN3'};
 opts.Prob='Ind'; %'GHK', 'HP' Is the covariance matrix restricted to be independent?
 opts.names={'kappa','G0','omega','a','b','w2'};
 opts.i0=3; %normalize w.r.t. altnerative...
@@ -57,7 +57,7 @@ opts.attrMax = zeros(1,opts.K);
 for k=1:opts.K
     opts.attrMax(k) = max(opts.attrVals{k});
 end
-opts.size_theta = 2;
+opts.size_theta = 3;
 clear k
 
 %Save format
@@ -76,10 +76,10 @@ end
 % - data(n).X{t}: Matrix of J(t) options x K(t) attributes
 % data(n).y : Vector of T x 1 Choices
 
-load data/ExampleDataSS
+load(['data' filesep 'ExpData3.mat']);
 
 SubjData = {};
-for s=1:2 %numel(data)
+for s=1:numel(data)
     SubjData{s}.Xs = data(s).X;
     SubjData{s}.Ys = data(s).y;
     SubjData{s}.Js = data(s).J;
@@ -100,16 +100,19 @@ for g = 1:param.G
     end
 end
 %% theta plot
-for k=1:param.K
-    subplot(3,param.K,k);
-    histogram(vect_omega(:,k,:,:),0:0.5:15)
-    title([attrNames{k} 'omega']);
-    subplot(3,param.K,param.K+k);
-    histogram(vect_sig(:,k,:,:),0:0.5:15)
-    title('beta');
-    subplot(3,param.K,2*param.K+k);
-    histogram(vect_sig(:,k,:,:)./vect_omega(:,k,:,:),0:0.25:10)
-    title('beta/omega');
+for k=1:param.size_theta
+    subplot(1,param.size_theta,k);
+    histogram(vect_theta(:,k,:,:),0:0.05:5)
+    title(sprintf('theta %d',k));
+end
+%% theta plot
+for ss = 1:N
+    for k=1:param.size_theta
+        subplot(1,param.size_theta,k);
+        histogram(vect_theta(ss,k,:,:))
+        title(sprintf('theta %d (i = %d)',k,ss));
+    end
+    waitforbuttonpress;
 end
  %% Full posterior (all the subjects superposed)
 % prior = [betarnd(3,1,10000,1) gamrnd(1,0.5,10000,1) gamrnd(1,1,10000,1)];

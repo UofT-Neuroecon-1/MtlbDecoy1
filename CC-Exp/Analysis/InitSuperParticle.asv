@@ -90,34 +90,14 @@ particle = struct;
             particle.theta(subj).log_like = 0;
             particle.theta(subj).logprior = 0;
         end
-    elseif strcmp(model,'DN')
-        particle.ha_theta = nan(param.num_clust,param.size_theta);
-        particle.hb_theta = gamrnd(2,1,param.num_clust,param.size_theta);
-        % Sample ha_omega via importance resampling
-        % Hyperparam: a=0.1, b=2, c=2
-        % Sample ha_theta via importance resampling
-        for c = 1:param.num_clust
-            draws_a = gamrnd(1,2,50,2);
-            log_weights_a = draws_a/2 ...
-                +(draws_a - 1) .* log(0.1) + 2 .* draws_a .* log(particle.hb_theta(c,:)) - 2.*log(gamma(draws_a));
-            log_weights_a = log_weights_a  - max(log_weights_a,[],1 );
-            weights_a = exp(log_weights_a)./sum(exp(log_weights_a),1);
-            particle.ha_theta(c,:) = draws_a(mnrnd(1,weights_a')'==1)';
-        end
-        
-        % Init subparticle container
-        particle.theta = struct;
-        for subj = 1:N
-            particle.theta(subj).clust = nan(1,param.num_clust);
-            particle.theta(subj).theta = nan(1,param.size_theta);
-        end
-    elseif strcmp(model,'DN3')
+    elseif strcmp(model,'HBC-ADN')
+        %% initialize hyperparams for gamma dists
+        particle.h_gam = nan(param.size_gam,2,param.num_clust);
         log_p = log(0.5);
         q = 1.5;
         r = 0.1;
         s = 0.4;
         n_draws = 1000;
-        particle.h_theta = nan(param.size_theta,2,param.num_clust);
         for c = 1:param.num_clust
             % Sample from prior via importance resampling + MH
             draws = gamrnd(2,3,n_draws,2);     
@@ -127,36 +107,87 @@ particle = struct;
             weights = exp(log_weights) ./ sum(exp(log_weights));
             weights = weights ./ prod(gampdf(draws,2,3),2);
             % sampling
-            sample_idx = randsample(1:n_draws,param.size_theta,true,weights);
+            sample_idx = randsample(1:n_draws,param.size_gam,true,weights);
             prior_sample = draws(sample_idx,:);
             
             % Metropolis Hastings step
             for m = 1:100
-                draw_step = gamrnd(100,0.01,param.size_theta,2);
-                prop_x = prior_sample .* draw_step;
+                draw_step = gamrnd(100,0.01,param.size_gam,2);
+                prop_x = particle.h_gam(:,:,c) .* draw_step;
                 log_kernel_ratio = sum( -198 .* log(draw_step) + 100 .* (draw_step - 1./ draw_step) , 2);
                 log_target_ratio = log_p .* (prop_x(:,1) - prior_sample(:,1)) - (prop_x(:,2) - prior_sample(:,2)) .* q ...
                     + s .* (prop_x(:,1) .* log(prop_x(:,2)) -  prior_sample(:,1) .* log(prior_sample(:,2))  ) ...
                     - r .* (gammaln(prop_x(:,1))-gammaln(prior_sample(:,1) ));
-                bool_accept = log(rand(param.size_theta,1)) < (log_kernel_ratio + log_target_ratio);
+                bool_accept = log(rand(param.size_gam,1)) < (log_kernel_ratio + log_target_ratio);
                 prior_sample(bool_accept,:) = prop_x(bool_accept,:);
             end
-            particle.h_theta(:,:,c) = prior_sample;
+            particle.h_gam(:,:,c) = prior_sample;
         end
         
-        % Init subparticle container
+        %% initialize hyperparams for MVNormal dists
+        particle.h_mvn_m = nan(param.size_mvn,1,param.num_clust);
+        particle.h_mvn_s = nan(param.size_mvn,param.size_mvn,param.num_clust);
+        % hyperprior params:
+        mu_0 = zeros(param.size_mvn,1);
+        k_0 = 1;
+        v_0 = param.size_mvn+4;
+        phi_0 = eye(param.size_mvn) * 2;
+
+        % Sample from hyperprior
+        for c = 1:param.num_clust
+            particle.h_mvn_s(:,:,c) = iwishrnd(phi_0,v_0);
+            particle.h_mvn_m(:,1,c) = mvnrnd(mu_0,particle.h_mvn_s(:,:,c),1);
+        end
+        
+        
+        %% initialize hyperparams for Beta dists
+        particle.h_bet = nan(param.size_bet,2,param.num_clust);
+        beta = 1;
+        log_p = log(0.4);
+        r = 1; %(b) 0 for degenerate
+        s = 0; %(c) 0 for degenerate, only matters if beta != 1
+        for c = 1:param.num_clust
+            % Sample from prior via importance resampling + MH
+            n_draws = 1000;
+            draws = gamrnd(2,3,n_draws,1);
+            %weighting draws
+            log_weights = (draws-1) .* log_p + (draws.*s) .* log(beta) - r .* gammaln(draws);
+            weights = exp(log_weights) ./ sum(exp(log_weights));
+            weights = weights ./ gampdf(draws,2,3);
+            % sampling
+            sample_idx = randsample(1:n_draws, 2*param.size_bet ,true,weights);
+            h_sample = draws(sample_idx,:);
+            % MH step
+            for m = 1:1000
+                draw_step = gamrnd(100,0.01,2*param.size_bet,1);
+                prop_x = h_sample .* draw_step;
+                log_kernel_ratio = -198 .* log(draw_step) + 100 .* (draw_step - 1./ draw_step);
+                log_target_ratio = log_p .* (prop_x- h_sample) ...
+                    + s .* (prop_x  -  h_sample) .* log(beta)  ...
+                    - r .* ( gammaln(prop_x) - gammaln(h_sample ));
+                bool_accept = log(rand(2*param.size_bet,1)) < (log_kernel_ratio + log_target_ratio);
+                h_sample(bool_accept,:) = prop_x(bool_accept,:);
+            end
+            particle.h_bet(:,:,c) = reshape(h_sample,param.size_bet,2);
+        end
+    
+        
+        
+        
+        
+        
+        %% Init subparticle container
         particle.theta = struct;
         for subj = 1:N
             particle.theta(subj).clust = nan(1,param.num_clust);
-            particle.theta(subj).theta = nan(1,param.size_theta);
+            particle.theta(subj).omega = nan(1,K);
+            particle.theta(subj).sig = nan(1,K);
+            particle.theta(subj).r = nan;
+            particle.theta(subj).log_like = 0;
+            particle.theta(subj).logprior = 0;
         end
     else
-        error(sprintf('InitParticle: unknown model used (%s)',model));
-    end
-    % Create likelihood and prior fields
-    for subj = 1:N
-        particle.theta(subj).log_like = 0;
-        particle.theta(subj).logprior = 0;
+        error('InitParticle: unknown model used');
     end
 
 end

@@ -22,19 +22,28 @@ for m = 1:numel(param.Models)
                             )); 
                     end
                     logcondit.total = sum(logcondit.beta) + logcondit.r;
-                elseif strcmp(model,'DN')
-                    logcondit.theta = zeros(1,param.size_theta);
-                    for k = 1:param.size_theta
-                        logcondit.theta(k) = log(gampdf( particle.theta(k), ...
-                            supParticle.ha_theta(particle.clust,k),1./supParticle.hb_theta(particle.clust,k) ...
-                            ));
-                    end
-                    logcondit.total = sum(logcondit.theta);
                 elseif strcmp(model,'DN3')
                     logcondit.theta = zeros(1,param.size_theta);
                     for k = 1:param.size_theta
                         logcondit.theta(k) = log(gampdf( particle.theta(k), ...
-                            supParticle.h_theta(k,1,particle.clust),1./supParticle.h_theta(k,2,particle.clust) ...
+                            supParticle.h_theta(k,1,particle.clust),1./supParticle.h_theta(k,1,particle.clust) ...
+                            ));
+                    end
+                    logcondit.total = sum(logcondit.theta);
+                elseif strcmp(model,'HBC-ADN')
+                    %% Proba of gamma param | H
+                    logcondit.gam = zeros(1,param.size_gam);
+                    for k = 1:param.size_theta
+                        logcondit.gam(k) = log(gampdf( particle.gam(k), ...
+                            supParticle.h_theta(k,1,particle.clust),1./supParticle.h_theta(k,1,particle.clust) ...
+                            ));
+                    end
+                    
+                    
+                    logcondit.theta = zeros(1,param.size_theta);
+                    for k = 1:param.size_theta
+                        logcondit.theta(k) = log(gampdf( particle.theta(k), ...
+                            supParticle.h_theta(k,1,particle.clust),1./supParticle.h_theta(k,1,particle.clust) ...
                             ));
                     end
                     logcondit.total = sum(logcondit.theta);

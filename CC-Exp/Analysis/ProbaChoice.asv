@@ -64,7 +64,11 @@ elseif strcmp(model,'HBC-ADN')
     end
     sim = repmat(u_bar',[size(param.NormDraw,1) 1]) + param.NormDraw(:,1:J) * CholeskyUpper;
     sim = sim - max(sim,[],2);
-    proba_choice = mean(exp(sim(:,Y)/0.1)./sum(exp(sim/0.1),2),1);
+    proba_choice = mean(exp(sim/0.1)./sum(exp(sim/0.1),2),1);
+    
+    proba_choice = mean(sim == max(sim,[],2));
+    %mixture 99.9% model and 0.1% unif
+    proba_choice = 0.99 .* proba_choice + 0.01/J;
 else
     error('ProbaChoice : unknown model');
 end
